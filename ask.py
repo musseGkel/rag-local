@@ -17,18 +17,23 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain.chains import create_retrieval_chain
 
-from langchain_community.llms import LlamaCpp
+from llama_cpp import Llama
+from langchain_community.chat_models import ChatLlamaCpp
 
 DB_DIR = "db"
-EMBED_MODEL = "BAAI/bge-small-en-v1.5"
-
+EMBED_MODEL = "models/bge-small-en-v1.5" 
 # >>> CHANGE this to your actual GGUF filename in ./models <<<
-GGUF_MODEL_PATH = os.path.join("models", "phi-3-mini-instruct.Q4_K_M.gguf")
+GGUF_MODEL_PATH = os.path.join("models", "phi-3-mini-4k-instruct-q4_k_m.gguf")  # match ls output
 # e.g., "models/qwen2.5-1.5b-instruct.Q4_K_M.gguf"
 
 def build_chain():
     # 1) Vector store / retriever
-    embeddings = HuggingFaceEmbeddings(model_name=EMBED_MODEL)
+    embeddings = HuggingFaceEmbeddings(
+        model_name=EMBED_MODEL,
+        cache_folder="models",                     
+        model_kwargs={"local_files_only": True},   
+    )
+
     vectordb = Chroma(
         collection_name="tutor",
         persist_directory=DB_DIR,
@@ -36,16 +41,22 @@ def build_chain():
     )
     retriever = vectordb.as_retriever(search_kwargs={"k": 5})
 
-    # 2) LLM (llama.cpp CPU)
-    llm = LlamaCpp(
+    if not os.path.isfile(GGUF_MODEL_PATH):
+        raise FileNotFoundError(f"Missing GGUF at: {GGUF_MODEL_PATH}")
+
+    client = Llama(
         model_path=GGUF_MODEL_PATH,
         n_ctx=4096,
         n_threads=os.cpu_count() or 4,
         n_batch=256,
+        seed=0,
+        n_gpu_layers=0,
+    )
+
+    llm = ChatLlamaCpp(
+        client=client,       # <-- pass the client (required in your version)
         temperature=0.0,
-        max_tokens=384,
         verbose=False,
-        model_kwargs={},      # <-- add this line
     )
 
     # 3) Prompt + chains (LCEL)

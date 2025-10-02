@@ -45,21 +45,29 @@ def build_pipeline():
     )
 
     def answer(question: str) -> str:
-        docs = retriever.invoke(question)  # modern call (no deprecation)
+        docs = retriever.invoke(question)
         if not docs:
             return "I don't know. No relevant context found in the DB. Try adding documents to ./corpus and re-running ingest."
 
         context = "\n\n".join(d.page_content for d in docs)
+
         prompt = (
             "You are a careful CS tutor. Use ONLY the provided context. "
             "If the answer isn't in the context, say you don't know and suggest what to try next.\n\n"
             f"Context:\n{context}\n\n"
             f"Question: {question}\n"
-            "Answer:"
+            "Answer (one concise sentence): "
         )
 
-        out = client.create_completion(prompt, temperature=0.0, max_tokens=512)
+        out = client.create_completion(
+            prompt,
+            temperature=0.0,
+            max_tokens=200,
+            stop=["\nQuestion:", "<|endoftext|>", "</s>", "<|end|>"],  # ← key change
+            repeat_penalty=1.05,  # tiny nudge to avoid repetition
+        )
         return out["choices"][0]["text"].strip()
+
 
     return answer
 

@@ -49,25 +49,53 @@ def build_pipeline():
         if not docs:
             return "I don't know. No relevant context found in the DB. Try adding documents to ./corpus and re-running ingest."
 
-        context = "\n\n".join(d.page_content for d in docs)
+        # Show up to 3 unique sources (optional)
+        sources = []
+        for d in docs:
+            src = d.metadata.get("source") or d.metadata.get("file_path")
+            if src and src not in sources:
+                sources.append(src)
+            if len(sources) >= 3:
+                break
 
+        # Keep the context tight (prevents the model from “reading out” the PDF)
+        context = "\n\n".join(d.page_content for d in docs)
+        context = context.strip()
+        if len(context) > 1800:   # keep it compact
+            context = context[:1800] + "..."
+
+        # Super explicit instruction + single-line answer
         prompt = (
             "You are a careful CS tutor. Use ONLY the provided context. "
-            "If the answer isn't in the context, say you don't know and suggest what to try next.\n\n"
+            "If the answer isn't explicitly in the context, reply exactly: I don't know from the context.\n\n"
             f"Context:\n{context}\n\n"
             f"Question: {question}\n"
-            "Answer (one concise sentence): "
+            "Answer (one short sentence, no bullets, no extra text): "
         )
 
         out = client.create_completion(
             prompt,
             temperature=0.0,
-            max_tokens=200,
-            stop=["\nQuestion:", "<|endoftext|>", "</s>", "<|end|>"],  # ← key change
-            repeat_penalty=1.05,  # tiny nudge to avoid repetition
+            max_tokens=120,                 # small cap so it can't ramble
+            top_p=0.1,                      # make it more deterministic
+            stop=[                          # cut off if it starts to wander
+                "\n\n",
+                "\nQuestion:",
+                "\nGroups",
+                "\n●", "● ", "○ ",
+                "Sources:",
+                "<|endoftext|>", "</s>", "<|end|>",
+            ],
+            repeat_penalty=1.05,
         )
-        return out["choices"][0]["text"].strip()
+        ans = out["choices"][0]["text"].strip()
 
+        # Post-process: take only the first line
+        ans = ans.splitlines()[0].strip()
+
+        if sources:
+            ans += "\n\nSources:\n- " + "\n- ".join(sources)
+        return ans
 
     return answer
 

@@ -90,6 +90,90 @@ def coerce_metadata(md: dict) -> dict:
             out[k] = str(v)
     return out
 
+def read_taxonomy_records_from_csv(path: Path) -> List[Document]:
+    """
+    Load taxonomy entries from the CSV version of 'Taxonomy notes - Errors'.
+    Creates ONE Document per taxonomy row (no splitting).
+    Expected headers (case-insensitive match supported):
+      - Id
+      - Cat
+      - Cat Name
+      - Error Description
+      - Literature example
+      - Description
+      - Requirements for assignment generation  (optional)
+      - Detection Difficulty (optional numeric)
+      - Detection Priority   (optional numeric)
+      - Detected - Base query (Y/1/True)
+      - Detected - Subquery   (Y/1/True)
+      - Detected - CTE        (Y/1/True)
+    """
+    import csv as _csv
+
+    def pick(d, *keys):
+        for k in keys:
+            if k in d and d[k] != "":
+                return d[k]
+        return ""
+
+    def truthy(v: str) -> bool:
+        t = (v or "").strip().lower()
+        return t in {"y","yes","true","1","✓","x"}
+
+    docs: List[Document] = []
+    with path.open(newline="", encoding="utf-8") as f:
+        reader = _csv.DictReader(f)
+        # Normalize header keys once for robust access
+        rows = []
+        for raw in reader:
+            norm = { (k or "").strip(): (v or "").strip() for k,v in raw.items() }
+            rows.append(norm)
+
+    for e in rows:
+        # Map the common column names used in the taxonomy sheet
+        taxonomy_id = pick(e, "taxonomy_id", "Id", "ID")
+        category     = pick(e, "category", "Cat")
+        name         = pick(e, "name", "Cat Name", "Error Name")
+        err_desc     = pick(e, "Error Description")
+        lit_example  = pick(e, "Literature example", "Example", "example_sql")
+        long_desc    = pick(e, "Description", "description")
+        reqs         = pick(e, "Requirements for assignment generation", "requirements")
+        diff         = pick(e, "Detection Difficulty", "difficulty")
+        prio         = pick(e, "Detection Priority", "priority")
+
+        # Appears-in flags from three columns
+        appears = []
+        if truthy(pick(e, "Detected - Base query")): appears.append("base")
+        if truthy(pick(e, "Detected - Subquery")):   appears.append("subquery")
+        if truthy(pick(e, "Detected - CTE")):        appears.append("cte")
+
+        # Build concise teaching card text
+        text = (
+            f"[{category}] {name}\n\n"
+            f"{long_desc or err_desc}\n\n"
+            f"Example:\n{lit_example}\n\n"
+            f"Detection:\n"
+            f"- Difficulty: {diff or 'n/a'}\n"
+            f"- Priority: {prio or 'n/a'}\n"
+            f"- Appears in: {', '.join(appears) if appears else 'n/a'}\n\n"
+            f"Assignment hints: {reqs or '—'}"
+        )
+
+        # Metadata (keep types Chroma-safe; your coerce_metadata handles lists)
+        meta = {
+            "doc_type": "taxonomy",
+            "taxonomy_id": int(taxonomy_id) if str(taxonomy_id).isdigit() else taxonomy_id,
+            "category": category,
+            "name": name,
+            "priority": int(prio) if str(prio).isdigit() else prio,
+            "difficulty": diff,
+            "appears_in": ", ".join(appears) if appears else "",
+            "source": "Taxonomy notes - Errors.csv",
+            "source_path": str(path),
+        }
+        docs.append(Document(page_content=text, metadata=coerce_metadata(meta)))
+    return docs
+
 
 # ---------- Main Ingest ----------
 def ingest():
@@ -106,8 +190,7 @@ def ingest():
     embeddings = HuggingFaceEmbeddings(
         model_name=EMBED_MODEL,
         encode_kwargs={"normalize_embeddings": True},
-    )
-
+    )   
     # Vector store bound to persistent client
     vectordb = Chroma(
         client=client,
@@ -119,69 +202,87 @@ def ingest():
 
     with CHAPTER_MAP.open(newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
-        require_csv_columns(
-            reader.fieldnames,
-            required=["resource_id", "path", "start_page", "end_page", "section"],
-        )
+        # Relax requirement: taxonomy rows won't have pages
+        require_csv_columns(reader.fieldnames, required=["resource_id", "path", "section"])
 
         for r in reader:
             # Resolve PDF path (absolute if given, else relative to ROOT)
             raw_path = (r.get("path") or "").strip()
-            pdf_path = Path(raw_path) if Path(raw_path).is_absolute() else (ROOT / raw_path)
+            data_path = Path(raw_path) if Path(raw_path).is_absolute() else (ROOT / raw_path)
+            kind = (r.get("kind") or "textbook").strip().lower()
 
-            if not pdf_path.exists():
-                print(f"⚠️  Missing file: {pdf_path} — skipping")
+            if not data_path.exists():
+                print(f"⚠️  Missing file: {data_path} — skipping")
                 continue
 
-            # Page range (CSV uses 1-based inclusive)
-            try:
-                s = max(1, int(r["start_page"]))
-                e = int(r["end_page"])
-            except Exception:
-                print(f"⚠️  Invalid page numbers for {r.get('resource_id')} — skipping")
+            # ---- Handle TAXONOMY CSV (no PDF, no chunking) ----
+            if kind == "taxonomy":
+                docs = []
+                if data_path.suffix.lower() in {".csv", ".tsv"}:
+                    docs = read_taxonomy_records_from_csv(data_path)
+                else:
+                    print(f"⚠️  Taxonomy expects CSV/TSV, got {data_path.suffix}; skipping.")
+                    continue
+
+                if docs:
+                    vectordb.add_documents(docs)
+                    rows += 1
+                    print(f"✅ Ingested TAXONOMY: {r['resource_id']} → {len(docs)} entries")
                 continue
+
+            # ---- Normal PDF flow (textbook/manual/paper) ----
+            # Load pages first so we can interpret "to the end"
+            loader = PyPDFLoader(str(data_path))
+            pages = loader.load()
+            total_pages = len(pages)
+
+            s_raw, e_raw = (r.get("start_page") or "").strip(), (r.get("end_page") or "").strip()
+            s = int(s_raw) if s_raw.isdigit() else 1
+            if e_raw.isdigit():
+                e = int(e_raw)
+                if e == 0:
+                    e = total_pages  # 0 means "to the end"
+            else:
+                e = total_pages if kind in {"paper"} else int(e_raw) if e_raw else total_pages
 
             if e < s:
                 print(f"⚠️  end_page < start_page for {r.get('resource_id')}:{r.get('section')} — skipping")
                 continue
 
-            # Load pages
-            loader = PyPDFLoader(str(pdf_path))
-            pages = loader.load()  # 0-based pages
-            sub = pages[s - 1 : e]  # slice inclusive in CSV → exclusive in Python
+            sub = pages[s - 1 : e]  # 1-based inclusive → 0-based slice
 
-            # Base metadata (normalize tags to a single string)
-            tags_iter = split_tags(r.get("tags", ""))
-            tags_str = ", ".join(tags_iter) if tags_iter else ""
-
+            # --- metadata
+            tags_str = ", ".join(split_tags(r.get("tags", ""))) or ""
             base_meta = {
-                "doc_type": (r.get("kind") or "textbook"),
+                "doc_type": kind,
                 "resource_id": r["resource_id"],
                 "section": r.get("section", ""),
-                "section_locator": r.get("section_locator", ""),
-                "source_path": str(pdf_path),
-                "tags": tags_str,  # <- string, not list
+                "section_locator": r.get("section_locator", f"pp.{s}-{e}"),
+                "source_path": str(data_path),
+                "tags": tags_str,
             }
-
             for p in sub:
                 p.metadata.update(base_meta)
+                p.metadata = coerce_metadata(p.metadata)
 
-            # Chunk & enrich
-            docs = chunk_documents(sub, size=1200, overlap=150)
+            # --- chunking (papers slightly smaller)
+            if kind == "paper":
+                size, overlap = 900, 120
+            else:
+                size, overlap = 1200, 150
+
+            docs = chunk_documents(sub, size=size, overlap=overlap)
             for i, d in enumerate(docs):
-                d.metadata.update(
-                    {
-                        "chunk_index": i,
-                        "has_sql_example": has_sql_example(d.page_content),
-                    }
-                )
-                # Ensure all metadata values are Chroma-safe
+                d.metadata.update({
+                    "chunk_index": i,
+                    "has_sql_example": has_sql_example(d.page_content),
+                })
                 d.metadata = coerce_metadata(d.metadata)
 
             if docs:
                 vectordb.add_documents(docs)
                 rows += 1
-                print(f"✅ Ingested: {r['resource_id']} [{s}-{e}] → {len(docs)} chunks")
+                print(f"✅ Ingested: {r['resource_id']} [{s}-{e}] ({kind}) → {len(docs)} chunks")
 
     print(f"🎯 Done. Sources ingested from {CHAPTER_MAP}: {rows} rows.")
 

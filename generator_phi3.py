@@ -54,10 +54,11 @@ def load_llm(model_path: str) -> Llama:
         model_path=model_path,
         n_ctx=4096,
         n_threads=os.cpu_count() or 4,
-        n_gpu_layers=0,      # set >0 if built with GPU support
-        chat_format="phi3",  # llama.cpp chat template for phi-3
+        n_gpu_layers=0,          # >0 if you built with GPU
+        chat_format="chatml",    # <- was "phi3"
         verbose=False,
     )
+
 
 
 def rag_answer(query: str) -> str:
@@ -74,8 +75,9 @@ def rag_answer(query: str) -> str:
         temperature=0.2,
         max_tokens=700,
         top_p=0.9,
-        stop=["</s>"],
+        # stop=["</s>"],  # optional to remove
     )
+
     answer = out["choices"][0]["message"]["content"].strip()
 
     # compact sources list

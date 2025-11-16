@@ -17,7 +17,7 @@ from langchain_core.documents import Document
 from sentence_transformers import CrossEncoder
 
 
-ROOT = Path(__file__).resolve().parent if "__file__" in globals() else Path.cwd()
+ROOT   = Path(os.getenv("ROOT", "/opt/rag"))
 DB_DIR = ROOT / "db"
 EMBED_MODEL = os.getenv("EMBED_MODEL", "BAAI/bge-small-en-v1.5")
 COLLECTION = "sqlkb"

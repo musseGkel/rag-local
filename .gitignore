@@ -2,3 +2,4 @@
 models
 corpus/
 db
+__pycache__/

@@ -73,10 +73,10 @@ def _get_reranker() -> CrossEncoder:
 
 def retrieve_for_generation(
     query: str,
-    fetch_k: int = 24,
-    mmr_k: int = 24,
+    fetch_k: int = 32,
+    mmr_k: int = 32,
     lambda_mult: float = 0.5,
-    top_n: int = 2,
+    top_n: int = 3,
 ) -> List[Document]:
     """
     Future-proof retriever that:
@@ -113,11 +113,57 @@ def retrieve_for_generation(
     return top_docs
 
 
+def build_retrieval_query(user_sql: str, user_goal: str) -> str:
+    return (
+        f"Query: {user_sql}. "
+        f"User goal: {user_goal}"
+    )
+
 if __name__ == "__main__":
-    q = "How do I write a SELECT with GROUP BY and HAVING in PostgreSQL?"
-    top_docs = retrieve_for_generation(q)
+    
+    user_sql = """
+        SELECT B.Matricola
+        FROM (
+        SELECT S.Matricola
+        FROM Studenti S
+        JOIN CorsiDiLaurea CDL
+            ON S.CorsoDiLaurea = CDL.id
+        AND CDL.Denominazione = 'Informatica'
+        JOIN Corsi C
+            ON C.CorsoDiLaurea = CDL.id
+        JOIN Esami E
+            ON E.Corso = C.id
+        AND C.id = 'bdd1n'
+        AND E.Studente = S.Matricola
+        WHERE EXTRACT(MONTH FROM E.Data) = 06
+            AND EXTRACT(YEAR FROM E.Data) =
+        ) AS B
+        JOIN (
+        SELECT S2.Matricola
+        FROM Studenti S2
+        JOIN CorsiDiLaurea CDL2
+            ON S2.CorsoDiLaurea = CDL2.id
+        AND CDL2.Denominazione = 'Informatica'
+        JOIN Corsi C2
+            ON C2.CorsoDiLaurea = CDL2.id
+        JOIN Esami E2
+            ON E2.Corso = C2.id
+        AND C2.id = 'ig'
+        AND E2.Studente = S2.Matricola
+        WHERE EXTRACT(MONTH FROM E2.Data) = 06
+            AND EXTRACT(YEAR FROM E2.Data) = 2010
+        ) AS I
+        ON B.Matricola = I.Matricola;
+
+    """
+    user_goal = "Identify which specific part of the query is likely responsible for the syntax error near the closing parenthesis, without fixing the query and without explaining what the query does."
+    
+    retrieval_query = build_retrieval_query(user_sql, user_goal)
+
+    top_docs = retrieve_for_generation(retrieval_query)
+
     print(f"Retrieved {len(top_docs)} doc(s) for generation.")
     for i, d in enumerate(top_docs, 1):
         print(f"\n--- Doc {i} ---")
         print(f"meta: {d.metadata}")
-        print(d.page_content[:600])
+        print(d.page_content)

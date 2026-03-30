@@ -13,7 +13,7 @@ from retriever_reranker_server import retrieve_for_generation
 MODEL_ID = os.getenv("GEN_MODEL", "deepseek-ai/deepseek-coder-6.7b-instruct")
 
 # keep context tight
-MAX_CONTEXT_CHARS = 9000
+MAX_CONTEXT_CHARS = 20000
 
 # Global model + tokenizer (load once, reuse for all queries)
 _TOKENIZER: AutoTokenizer | None = None
@@ -88,14 +88,21 @@ def build_messages(prompt: LensPrompt, context: str):
 def get_hf_model():
     global _TOKENIZER, _MODEL
     if _TOKENIZER is None or _MODEL is None:
-        _TOKENIZER = AutoTokenizer.from_pretrained(MODEL_ID)
-        # choose dtype based on GPU availability
+        _TOKENIZER = AutoTokenizer.from_pretrained(MODEL_ID, use_fast=True)
+
+        # Some DeepSeek tokenizers do not define a pad token, set it to EOS to avoid generate() warnings/errors
+        if _TOKENIZER.pad_token_id is None:
+            _TOKENIZER.pad_token = _TOKENIZER.eos_token
+
         dtype = torch.bfloat16 if torch.cuda.is_available() else torch.float32
+
         _MODEL = AutoModelForCausalLM.from_pretrained(
             MODEL_ID,
-            dtype=dtype,
-            device_map="auto",   # use all available GPUs/CPU sensibly
+            torch_dtype=dtype,
+            device_map="auto",
         )
+        _MODEL.eval()
+
     return _TOKENIZER, _MODEL
 
 

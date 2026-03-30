@@ -3,3 +3,6 @@ models
 corpus/
 db
 __pycache__/
+evaluation/
+sanity_check.py
+db/chroma.sqlite3

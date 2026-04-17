@@ -391,16 +391,3 @@ to:
         generation_query=generation_query,
     )
 
-
-# Optional registry if you want a central map of builders
-
-PromptBuilder = Callable[..., LensPrompt]
-
-PROMPT_BUILDERS: Dict[str, PromptBuilder] = {
-    "describe_query": make_describe_query_prompt,
-    "explain_query": make_explain_query_prompt,
-    "explain_error": make_explain_error_prompt,
-    "show_example_same_error": make_show_example_prompt,
-    "where_is_error": make_where_is_error_prompt,
-    "suggest_fix": make_suggest_fix_prompt,
-}

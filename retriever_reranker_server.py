@@ -67,14 +67,23 @@ _reranker_model: CrossEncoder | None = None
 def _get_reranker() -> CrossEncoder:
     global _reranker_model
     if _reranker_model is None:
-        _reranker_model = CrossEncoder("BAAI/bge-reranker-v2-m3")
+        # Use 'cuda' to pick up the visible device, and set automapping
+        import torch
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        
+        _reranker_model = CrossEncoder(
+            "BAAI/bge-reranker-v2-m3", 
+            device=device,
+            # This helps if VRAM is very tight
+            tokenizer_args={'clean_up_tokenization_spaces': True} 
+        )
     return _reranker_model
 
 
 def retrieve_for_generation(
     query: str,
     fetch_k: int = 32,
-    mmr_k: int = 32,
+    mmr_k: int = 16,
     lambda_mult: float = 0.5,
     top_n: int = 3,
 ) -> List[Document]:

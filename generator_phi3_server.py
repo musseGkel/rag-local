@@ -7,18 +7,18 @@ import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from langchain_core.documents import Document
 
-# your retriever (MMR + CrossEncoder, the one we just fixed)
+# retriever (MMR + CrossEncoder) to get relevant docs for generation
 from retriever_reranker_server import retrieve_for_generation
 
-# Hugging Face model id (matches your cached folder models--microsoft--phi-4-mini-instruct)
+# Hugging Face model id (matches cached folder models--microsoft--phi-4-mini-instruct)
 MODEL_ID = os.getenv("GEN_MODEL", "microsoft/phi-4-mini-instruct")
 
 # keep context tight
-MAX_CONTEXT_CHARS = 9000
+MAX_CONTEXT_CHARS = 30000
 
 # Global model + tokenizer (load once, reuse for all queries)
-_TOKENIZER: AutoTokenizer | None = None
-_MODEL: AutoModelForCausalLM | None = None
+_TOKENIZER: AutoTokenizer | None = None # converts raw text to token ids (that the model uses) and back
+_MODEL: AutoModelForCausalLM | None = None # the actual language model that generates text
 
 from dataclasses import dataclass
 from lens_prompts import LensPrompt, LENS_SYSTEM_PROMPT

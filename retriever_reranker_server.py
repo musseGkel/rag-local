@@ -2,6 +2,7 @@ from __future__ import annotations
 
 try:
     import pysqlite3, sys
+
     sys.modules["sqlite3"] = sys.modules.pop("pysqlite3")
 except Exception:
     pass
@@ -17,7 +18,7 @@ from langchain_core.documents import Document
 from sentence_transformers import CrossEncoder
 
 
-ROOT   = Path(os.getenv("ROOT", "/opt/rag"))
+ROOT = Path(os.getenv("ROOT", "/opt/rag"))
 DB_DIR = ROOT / "db"
 EMBED_MODEL = os.getenv("EMBED_MODEL", "BAAI/bge-small-en-v1.5")
 COLLECTION = "sqlkb"
@@ -69,13 +70,14 @@ def _get_reranker() -> CrossEncoder:
     if _reranker_model is None:
         # Use 'cuda' to pick up the visible device, and set automapping
         import torch
+
         device = "cuda" if torch.cuda.is_available() else "cpu"
-        
+
         _reranker_model = CrossEncoder(
-            "BAAI/bge-reranker-v2-m3", 
+            "BAAI/bge-reranker-v2-m3",
             device=device,
             # This helps if VRAM is very tight
-            tokenizer_args={'clean_up_tokenization_spaces': True} 
+            tokenizer_kwargs={"clean_up_tokenization_spaces": True},
         )
     return _reranker_model
 
@@ -101,8 +103,8 @@ def retrieve_for_generation(
     # This approximates your old base_retriever with search_type="mmr"
     candidates = vectordb.max_marginal_relevance_search(
         query,
-        k=mmr_k,           # how many docs we keep before reranking
-        fetch_k=fetch_k,   # pool for diversity
+        k=mmr_k,  # how many docs we keep before reranking
+        fetch_k=fetch_k,  # pool for diversity
         lambda_mult=lambda_mult,
     )
 
@@ -123,13 +125,11 @@ def retrieve_for_generation(
 
 
 def build_retrieval_query(user_sql: str, user_goal: str) -> str:
-    return (
-        f"Query: {user_sql}. "
-        f"User goal: {user_goal}"
-    )
+    return f"Query: {user_sql}. " f"User goal: {user_goal}"
+
 
 if __name__ == "__main__":
-    
+
     user_sql = """
         SELECT B.Matricola
         FROM (
@@ -166,7 +166,7 @@ if __name__ == "__main__":
 
     """
     user_goal = "Identify which specific part of the query is likely responsible for the syntax error near the closing parenthesis, without fixing the query and without explaining what the query does."
-    
+
     retrieval_query = build_retrieval_query(user_sql, user_goal)
 
     top_docs = retrieve_for_generation(retrieval_query)

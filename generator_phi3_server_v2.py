@@ -220,6 +220,7 @@ if __name__ == "__main__":
         )
 
     elif mode == "provide_error_example":
+        user_sql = "select * from custom"
         prompt = provide_error_example(
             code=user_sql,
             exception=error_message + f" (code: {error_code})",

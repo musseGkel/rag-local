@@ -3,6 +3,8 @@ from __future__ import annotations
 import os
 from typing import List
 
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from langchain_core.documents import Document
@@ -205,108 +207,108 @@ def rag_answer(prompt: LensPrompt) -> str:
 # + "\n" + "\n".join(lines)
 
 
-if __name__ == "__main__":
-    mode = os.getenv("LENS_MODE", "describe_query")
-    lang = os.getenv("LENS_LANG", "en")
+# if __name__ == "__main__":
+#     mode = os.getenv("LENS_MODE", "describe_query")
+#     lang = os.getenv("LENS_LANG", "en")
 
-    user_sql = "select * from customer"
-    error_message = "UndefinedTable: relation custom does not exist"
-    error_code = "42P01"
+#     user_sql = "select * from customer"
+#     error_message = "UndefinedTable: relation custom does not exist"
+#     error_code = "42P01"
 
-    if mode == "describe_my_query":
-        prompt = describe_my_query(code=user_sql, lang=lang)
+#     if mode == "describe_my_query":
+#         prompt = describe_my_query(code=user_sql, lang=lang)
 
-    elif mode == "explain_my_query":
-        prompt = explain_my_query(code=user_sql, lang=lang)
+#     elif mode == "explain_my_query":
+#         prompt = explain_my_query(code=user_sql, lang=lang)
 
-    elif mode == "explain_error":
-        user_sql = "select * from custom"
-        prompt = explain_error(
-            code=user_sql, exception=error_message + f" (code: {error_code})", lang=lang
-        )
+#     elif mode == "explain_error":
+#         user_sql = "select * from custom"
+#         prompt = explain_error(
+#             code=user_sql, exception=error_message + f" (code: {error_code})", lang=lang
+#         )
 
-    elif mode == "provide_error_example":
-        user_sql = "select * from custom"
-        prompt = provide_error_example(
-            code=user_sql,
-            exception=error_message + f" (code: {error_code})",
-            lang=lang,
-        )
+#     elif mode == "provide_error_example":
+#         user_sql = "select * from custom"
+#         prompt = provide_error_example(
+#             code=user_sql,
+#             exception=error_message + f" (code: {error_code})",
+#             lang=lang,
+#         )
 
-    elif mode == "locate_error_cause":
-        user_sql = "select * from custom"
-        prompt = locate_error_cause(
-            code=user_sql,
-            exception=error_message + f" (code: {error_code})",
-            lang=lang,
-        )
+#     elif mode == "locate_error_cause":
+#         user_sql = "select * from custom"
+#         prompt = locate_error_cause(
+#             code=user_sql,
+#             exception=error_message + f" (code: {error_code})",
+#             lang=lang,
+#         )
 
-    elif mode == "fix_query":
-        user_sql = "select * from custom"
-        prompt = fix_query(
-            code=user_sql,
-            exception=error_message + f" (code: {error_code})",
-            lang=lang,
-            errors=[
-                DetectedError(
-                    error=SqlErrors.SYN_7_UNDEFINED_OBJECT,
-                )
-            ],
-        )
-    elif mode == "detect_errors":
-        user_sql = "select * from custom"
-        prompt = detect_errors(
-            code=user_sql,
-            errors=[
-                DetectedError(
-                    error=SqlErrors.SYN_7_UNDEFINED_OBJECT,
-                )
-            ],
-            lang=lang,
-        )
+#     elif mode == "fix_query":
+#         user_sql = "select * from custom"
+#         prompt = fix_query(
+#             code=user_sql,
+#             exception=error_message + f" (code: {error_code})",
+#             lang=lang,
+#             errors=[
+#                 DetectedError(
+#                     error=SqlErrors.SYN_7_UNDEFINED_OBJECT,
+#                 )
+#             ],
+#         )
+#     elif mode == "detect_errors":
+#         user_sql = "select * from custom"
+#         prompt = detect_errors(
+#             code=user_sql,
+#             errors=[
+#                 DetectedError(
+#                     error=SqlErrors.SYN_7_UNDEFINED_OBJECT,
+#                 )
+#             ],
+#             lang=lang,
+#         )
 
-    elif mode == "locate_error_cause_v2":
-        user_sql = """
-        SELECT B.Matricola
-        FROM (
-        SELECT S.Matricola
-        FROM Studenti S
-        JOIN CorsiDiLaurea CDL
-            ON S.CorsoDiLaurea = CDL.id
-        AND CDL.Denominazione = 'Informatica'
-        JOIN Corsi C
-            ON C.CorsoDiLaurea = CDL.id
-        JOIN Esami E
-            ON E.Corso = C.id
-        AND C.id = 'bdd1n'
-        AND E.Studente = S.Matricola
-        WHERE EXTRACT(MONTH FROM E.Data) = 06
-            AND EXTRACT(YEAR FROM E.Data) =
-        ) AS B
-        JOIN (
-        SELECT S2.Matricola
-        FROM Studenti S2
-        JOIN CorsiDiLaurea CDL2
-            ON S2.CorsoDiLaurea = CDL2.id
-        AND CDL2.Denominazione = 'Informatica'
-        JOIN Corsi C2
-            ON C2.CorsoDiLaurea = CDL2.id
-        JOIN Esami E2
-            ON E2.Corso = C2.id
-        AND C2.id = 'ig'
-        AND E2.Studente = S2.Matricola
-        WHERE EXTRACT(MONTH FROM E2.Data) = 06
-            AND EXTRACT(YEAR FROM E2.Data) = 2010
-        ) AS I
-        ON B.Matricola = I.Matricola;
-        """
-        prompt = locate_error_cause(
-            code=user_sql,
-            exception='syntax error at or near ")"',
-            lang=lang,
-        )
+#     elif mode == "locate_error_cause_v2":
+#         user_sql = """
+#         SELECT B.Matricola
+#         FROM (
+#         SELECT S.Matricola
+#         FROM Studenti S
+#         JOIN CorsiDiLaurea CDL
+#             ON S.CorsoDiLaurea = CDL.id
+#         AND CDL.Denominazione = 'Informatica'
+#         JOIN Corsi C
+#             ON C.CorsoDiLaurea = CDL.id
+#         JOIN Esami E
+#             ON E.Corso = C.id
+#         AND C.id = 'bdd1n'
+#         AND E.Studente = S.Matricola
+#         WHERE EXTRACT(MONTH FROM E.Data) = 06
+#             AND EXTRACT(YEAR FROM E.Data) =
+#         ) AS B
+#         JOIN (
+#         SELECT S2.Matricola
+#         FROM Studenti S2
+#         JOIN CorsiDiLaurea CDL2
+#             ON S2.CorsoDiLaurea = CDL2.id
+#         AND CDL2.Denominazione = 'Informatica'
+#         JOIN Corsi C2
+#             ON C2.CorsoDiLaurea = CDL2.id
+#         JOIN Esami E2
+#             ON E2.Corso = C2.id
+#         AND C2.id = 'ig'
+#         AND E2.Studente = S2.Matricola
+#         WHERE EXTRACT(MONTH FROM E2.Data) = 06
+#             AND EXTRACT(YEAR FROM E2.Data) = 2010
+#         ) AS I
+#         ON B.Matricola = I.Matricola;
+#         """
+#         prompt = locate_error_cause(
+#             code=user_sql,
+#             exception='syntax error at or near ")"',
+#             lang=lang,
+#         )
 
-    else:
-        raise ValueError(f"Unknown mode: {mode}")
+#     else:
+#         raise ValueError(f"Unknown mode: {mode}")
 
-    print(rag_answer(prompt))
+#     print(rag_answer(prompt))

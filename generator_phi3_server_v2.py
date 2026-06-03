@@ -263,38 +263,38 @@ def rag_answer(prompt: LensPrompt) -> str:
 
 #     elif mode == "locate_error_cause_v2":
 #         user_sql = """
-#         SELECT B.Matricola
-#         FROM (
-#         SELECT S.Matricola
-#         FROM Studenti S
-#         JOIN CorsiDiLaurea CDL
-#             ON S.CorsoDiLaurea = CDL.id
-#         AND CDL.Denominazione = 'Informatica'
-#         JOIN Corsi C
-#             ON C.CorsoDiLaurea = CDL.id
-#         JOIN Esami E
-#             ON E.Corso = C.id
-#         AND C.id = 'bdd1n'
-#         AND E.Studente = S.Matricola
-#         WHERE EXTRACT(MONTH FROM E.Data) = 06
-#             AND EXTRACT(YEAR FROM E.Data) =
-#         ) AS B
-#         JOIN (
-#         SELECT S2.Matricola
-#         FROM Studenti S2
-#         JOIN CorsiDiLaurea CDL2
-#             ON S2.CorsoDiLaurea = CDL2.id
-#         AND CDL2.Denominazione = 'Informatica'
-#         JOIN Corsi C2
-#             ON C2.CorsoDiLaurea = CDL2.id
-#         JOIN Esami E2
-#             ON E2.Corso = C2.id
-#         AND C2.id = 'ig'
-#         AND E2.Studente = S2.Matricola
-#         WHERE EXTRACT(MONTH FROM E2.Data) = 06
-#             AND EXTRACT(YEAR FROM E2.Data) = 2010
-#         ) AS I
-#         ON B.Matricola = I.Matricola;
+        SELECT B.Matricola
+        FROM (
+        SELECT S.Matricola
+        FROM Studenti S
+        JOIN CorsiDiLaurea CDL
+            ON S.CorsoDiLaurea = CDL.id
+        AND CDL.Denominazione = 'Informatica'
+        JOIN Corsi C
+            ON C.CorsoDiLaurea = CDL.id
+        JOIN Esami E
+            ON E.Corso = C.id
+        AND C.id = 'bdd1n'
+        AND E.Studente = S.Matricola
+        WHERE EXTRACT(MONTH FROM E.Data) = 06
+            AND EXTRACT(YEAR FROM E.Data) =
+        ) AS B
+        JOIN (
+        SELECT S2.Matricola
+        FROM Studenti S2
+        JOIN CorsiDiLaurea CDL2
+            ON S2.CorsoDiLaurea = CDL2.id
+        AND CDL2.Denominazione = 'Informatica'
+        JOIN Corsi C2
+            ON C2.CorsoDiLaurea = CDL2.id
+        JOIN Esami E2
+            ON E2.Corso = C2.id
+        AND C2.id = 'ig'
+        AND E2.Studente = S2.Matricola
+        WHERE EXTRACT(MONTH FROM E2.Data) = 06
+            AND EXTRACT(YEAR FROM E2.Data) = 2010
+        ) AS I
+        ON B.Matricola = I.Matricola;
 #         """
 #         prompt = locate_error_cause(
 #             code=user_sql,

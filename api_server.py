@@ -61,7 +61,7 @@ def build_prompt(req: QueryRequest):
         return explain_error(req.sql, req.error_message, lang=req.language)
 
     elif req.mode == "provide_error_example":
-        return provide_error_example(req.error_message, lang=req.language)
+        return provide_error_example(req.sql, req.error_message, lang=req.language)
 
     elif req.mode == "locate_error_cause":
         return locate_error_cause(req.sql, req.error_message, lang=req.language)

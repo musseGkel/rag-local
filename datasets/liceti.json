@@ -1,0 +1,461 @@
+{
+  "dataset_str": "BEGIN;\n-- Script MySQL per esercitazione Database Attori / Recita / Film / Proiezioni / Sale\n-- Schema tratto dalla traccia: ATTORI, RECITA, FILM, PROIEZIONI, SALE.\n\nDROP DATABASE IF EXISTS `liceti`;\n\nCREATE DATABASE `liceti`;\n\nUSE `liceti`;\n\nSET FOREIGN_KEY_CHECKS = 0;\nDROP TABLE IF EXISTS PROIEZIONI;\nDROP TABLE IF EXISTS RECITA;\nDROP TABLE IF EXISTS SALE;\nDROP TABLE IF EXISTS FILM;\nDROP TABLE IF EXISTS ATTORI;\nSET FOREIGN_KEY_CHECKS = 1;\n\nCREATE TABLE ATTORI (\n    CodAttore INT PRIMARY KEY,\n    Nome VARCHAR(80) NOT NULL,\n    AnnoNascita INT NOT NULL,\n    Nazionalita VARCHAR(40) NOT NULL,\n    CHECK (AnnoNascita BETWEEN 1880 AND 2020)\n);\n\nCREATE TABLE FILM (\n    CodFilm INT PRIMARY KEY,\n    Titolo VARCHAR(120) NOT NULL,\n    AnnoProduzione INT NOT NULL,\n    Nazionalita VARCHAR(40) NOT NULL,\n    Regista VARCHAR(80) NOT NULL,\n    Genere VARCHAR(60) NOT NULL,\n    Durata INT NOT NULL,\n    CHECK (AnnoProduzione BETWEEN 1890 AND 2030),\n    CHECK (Durata > 0)\n);\n\nCREATE TABLE SALE (\n    CodSala INT PRIMARY KEY,\n    Posti INT NOT NULL,\n    Nome VARCHAR(80) NOT NULL,\n    Citta VARCHAR(50) NOT NULL,\n    CHECK (Posti > 0)\n);\n\nCREATE TABLE RECITA (\n    CodAttore INT NOT NULL,\n    CodFilm INT NOT NULL,\n    PRIMARY KEY (CodAttore, CodFilm),\n    FOREIGN KEY (CodAttore) REFERENCES ATTORI(CodAttore)\n        ON UPDATE CASCADE ON DELETE RESTRICT,\n    FOREIGN KEY (CodFilm) REFERENCES FILM(CodFilm)\n        ON UPDATE CASCADE ON DELETE RESTRICT\n);\n\nCREATE TABLE PROIEZIONI (\n    CodProiezione INT PRIMARY KEY,\n    CodFilm INT NOT NULL,\n    CodSala INT NOT NULL,\n    Incasso DECIMAL(10,2) NOT NULL,\n    DataProiezione DATE NOT NULL,\n    FOREIGN KEY (CodFilm) REFERENCES FILM(CodFilm)\n        ON UPDATE CASCADE ON DELETE RESTRICT,\n    FOREIGN KEY (CodSala) REFERENCES SALE(CodSala)\n        ON UPDATE CASCADE ON DELETE RESTRICT,\n    CHECK (Incasso >= 0)\n);\n\nINSERT INTO ATTORI (CodAttore, Nome, AnnoNascita, Nazionalita) VALUES\n(1,  'M. Mastroianni',       1924, 'Italiana'),\n(2,  'S. Loren',             1934, 'Italiana'),\n(3,  'R. Williams',          1951, 'Statunitense'),\n(4,  'John Travolta',        1954, 'Statunitense'),\n(5,  'Uma Thurman',          1970, 'Statunitense'),\n(6,  'Samuel L. Jackson',    1948, 'Statunitense'),\n(7,  'Bruce Willis',         1955, 'Statunitense'),\n(8,  'Harvey Keitel',        1939, 'Statunitense'),\n(9,  'Tim Roth',             1961, 'Britannica'),\n(10, 'Jean Reno',            1948, 'Francese'),\n(11, 'Juliette Binoche',     1964, 'Francese'),\n(12, 'Takeshi Kitano',       1947, 'Giapponese'),\n(13, 'Rinko Kikuchi',        1981, 'Giapponese'),\n(14, 'Robert Downey Jr.',    1965, 'Statunitense'),\n(15, 'Robert De Niro',       1943, 'Statunitense'),\n(16, 'Tom Hanks',            1956, 'Statunitense'),\n(17, 'Isabelle Huppert',     1953, 'Francese'),\n(18, 'Audrey Tautou',        1976, 'Francese'),\n(19, 'Giancarlo Giannini',   1942, 'Italiana'),\n(20, 'Penelope Cruz',        1974, 'Spagnola'),\n(21, 'Harrison Ford',        1942, 'Statunitense'),\n(22, 'Liam Neeson',          1952, 'Irlandese'),\n(23, 'Chieko Baisho',        1941, 'Giapponese'),\n(24, 'Marion Cotillard',     1975, 'Francese'),\n(25, 'Gong Li',              1965, 'Cinese');\n\nINSERT INTO FILM (CodFilm, Titolo, AnnoProduzione, Nazionalita, Regista, Genere, Durata) VALUES\n(101, 'LA DOLCE VITA',              1960, 'Italiana',      'F. Fellini',          'drammatico',             174),\n(102, 'OTTO E MEZZO',               1963, 'Italiana',      'F. Fellini',          'drammatico',             138),\n(103, 'AMARCORD',                   1973, 'Italiana',      'F. Fellini',          'commedia',               123),\n(104, 'PULP FICTION',               1994, 'Statunitense',  'Quentin Tarantino',   'noir',                   154),\n(105, 'A.I. ARTIFICIAL INTELLIGENCE',2001,'Statunitense',  'S. Spielberg',        'fantascienza',           146),\n(106, 'MINORITY REPORT',            2002, 'Statunitense',  'S. Spielberg',        'fantascienza',           145),\n(107, 'E.T. L EXTRATERRESTRE',      1982, 'Statunitense',  'S. Spielberg',        'fantascienza',           115),\n(108, 'BICENTENNIAL MAN',           1999, 'Statunitense',  'Chris Columbus',      'fantascienza romantico', 131),\n(109, 'TOKYO FUTURE',               1998, 'Giapponese',    'K. Nakamura',         'fantascienza',           118),\n(110, 'PARIS 2050',                 1995, 'Francese',      'Luc Besson',          'fantascienza',           121),\n(111, 'LE VOYAGE DANS LA LUNE 2',   1988, 'Francese',      'Jean Dupont',         'fantascienza',           101),\n(112, 'LA CIOCIARA',                1960, 'Italiana',      'Vittorio De Sica',    'drammatico',             101),\n(113, 'MATRIMONIO ALL ITALIANA',    1964, 'Italiana',      'Vittorio De Sica',    'commedia romantico',     102),\n(114, 'GOOD MORNING VIETNAM',       1987, 'Statunitense',  'Barry Levinson',      'commedia',               121),\n(115, 'LEON',                       1994, 'Francese',      'Luc Besson',          'azione',                 110),\n(116, 'MEMORIE DI UNA GEISHA',      2005, 'Statunitense',  'Rob Marshall',        'drammatico',             145),\n(117, 'TERMINALE',                  2004, 'Statunitense',  'S. Spielberg',        'commedia drammatica',    128),\n(118, 'IL POSTINO DEL TEMPO',       2003, 'Italiana',      'Giuseppe Tornatore',  'fantascienza',           112),\n(119, 'ONLY OLD STARS',             2001, 'Britannica',    'Ken Loach',           'drammatico',              99),\n(120, 'ROBERTS GALAXY',             2015, 'Statunitense',  'Ava DuVernay',        'fantascienza',           130),\n(121, 'NUOVA ONDA',                 2011, 'Francese',      'Luc Besson',          'thriller',               116);\n\nINSERT INTO SALE (CodSala, Posti, Nome, Citta) VALUES\n(1,  50,  'Sala Azzurra',       'Pisa'),\n(2,  80,  'Cinema Arno',        'Pisa'),\n(3,  120, 'Multisala Torre',    'Pisa'),\n(4,  70,  'Cinema Vesuvio',     'Napoli'),\n(5,  55,  'Sala Partenope',     'Napoli'),\n(6,  150, 'Modernissimo',       'Napoli'),\n(7,  90,  'Cinema Lumiere',     'Roma'),\n(8,  110, 'Cinema Mole',        'Torino'),\n(9,  65,  'Cinema Duomo',       'Milano'),\n(10, 45,  'Sala Piccola Pisa',  'Pisa');\n\nINSERT INTO RECITA (CodAttore, CodFilm) VALUES\n-- Fellini e cinema italiano\n(1,101), (2,101), (1,102), (19,102), (1,103), (2,103),\n(2,112), (19,112), (1,113), (2,113),\n-- Pulp Fiction: 6 attori, utile per query sul conteggio\n(4,104), (5,104), (6,104), (7,104), (8,104), (9,104),\n-- Spielberg\n(3,105), (7,105), (16,105),\n(14,106), (21,106), (16,107), (3,107), (16,117), (24,117),\n-- Fantascienza giapponese/francese\n(12,109), (13,109), (23,109),\n(10,110), (11,110), (18,110),\n(10,111), (17,111),\n-- Altri film\n(3,108), (17,108),\n(3,114),\n(10,115), (11,115),\n(20,116), (25,116), (24,116),\n(1,118), (13,118),\n(10,119), (12,119), (15,119),\n(14,120), (15,120), (22,120),\n(18,121), (24,121);\n\nINSERT INTO PROIEZIONI (CodProiezione, CodFilm, CodSala, Incasso, DataProiezione) VALUES\n-- Natale 2004, incluse Napoli e Pisa\n(1001, 114, 4,  7200.00, '2004-12-25'),\n(1002, 108, 6,  9800.00, '2004-12-25'),\n(1003, 104, 7, 12000.00, '2004-12-25'),\n(1004, 110, 1,  4300.00, '2004-12-25'),\n(1005, 105, 2,  8700.00, '2004-12-25'),\n-- Pisa gennaio 2005, utile per query 10 e 30\n(1006, 105, 2,  9000.00, '2005-01-02'),\n(1007, 106, 2,  8500.00, '2005-01-08'),\n(1008, 104, 2,  7800.00, '2005-01-16'),\n(1009, 109, 3, 11000.00, '2005-01-05'),\n(1010, 110, 3, 12500.00, '2005-01-20'),\n(1011, 118, 3, 10500.00, '2005-01-26'),\n(1012, 102, 1,  3000.00, '2005-01-12'),\n(1013, 103, 10, 2500.00, '2005-01-18'),\n-- Proiezioni prima e dopo 1/1/2001 per fantascienza\n(1014, 109, 8,  6200.00, '2000-12-30'),\n(1015, 109, 3,  9100.00, '2001-02-15'),\n(1016, 110, 9,  7600.00, '2001-03-10'),\n(1017, 111, 5,  2100.00, '1999-11-11'),\n(1018, 118, 1,  4500.00, '2004-06-01'),\n(1019, 120, 3, 15600.00, '2016-02-10'),\n-- Incassi vari per aggregazioni\n(1020, 101, 7,  5400.00, '1999-01-10'),\n(1021, 102, 2,  4100.00, '2005-02-10'),\n(1022, 103, 4,  3900.00, '2004-10-10'),\n(1023, 104, 6, 13000.00, '2011-05-05'),\n(1024, 105, 3, 14500.00, '2005-03-12'),\n(1025, 106, 1,  6000.00, '2005-04-10'),\n(1026, 107, 2,  7700.00, '2004-07-07'),\n(1027, 108, 4,  6800.00, '2003-12-20'),\n(1028, 112, 9,  2200.00, '1998-04-12'),\n(1029, 113, 1,  1800.00, '2005-06-06'),\n(1030, 115, 8,  8200.00, '2005-07-07'),\n(1031, 116, 6, 10500.00, '2006-01-15'),\n(1032, 117, 2,  9300.00, '2005-01-23'),\n(1033, 119, 9,  3600.00, '2002-02-02'),\n(1034, 120, 6, 25500.00, '2016-03-03'),\n(1035, 121, 3,  7300.00, '2012-05-05');\n\n-- Indici utili per velocizzare join e filtri ricorrenti nelle interrogazioni.\nCREATE INDEX idx_sale_citta ON SALE(Citta);\nCREATE INDEX idx_film_regista ON FILM(Regista);\nCREATE INDEX idx_film_genere_naz_anno ON FILM(Genere, Nazionalita, AnnoProduzione);\nCREATE INDEX idx_proiezioni_data ON PROIEZIONI(DataProiezione);\nCREATE INDEX idx_attori_nome ON ATTORI(Nome);\nCOMMIT;",
+  "dbms": "mysql",
+  "description": "Prima prova",
+  "domain": null,
+  "exercises": [
+    {
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "request": "Il nome di tutte le sale di Pisa",
+      "solutions": [
+        "SELECT DISTINCT Nome\nFROM SALE\nWHERE Citta = 'Pisa';"
+      ],
+      "title": "Esercizio 1"
+    },
+    {
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "request": "Il titolo dei film di F. Fellini prodotti dopo il 1960.",
+      "solutions": [
+        "SELECT Titolo\nFROM FILM\nWHERE Regista = 'F. Fellini'\n  AND AnnoProduzione > 1960;"
+      ],
+      "title": "Esercizio 2"
+    },
+    {
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "request": "Il titolo e la durata dei film di fantascienza giapponesi o francesi prodotti dopo il 1990.",
+      "solutions": [
+        "SELECT Titolo, Durata\nFROM FILM\nWHERE Genere = 'Fantascienza'\n  AND Nazionalita IN ('Giapponese', 'Francese')\n  AND AnnoProduzione > 1990;"
+      ],
+      "title": "Esercizio 3"
+    },
+    {
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "request": "Il titolo dei film di fantascienza giapponesi prodotti dopo il 1990 oppure francesi.",
+      "solutions": [
+        "SELECT Titolo\nFROM FILM\nWHERE (Genere = 'Fantascienza'\n       AND Nazionalita = 'Giapponese'\n       AND AnnoProduzione > 1990)\n   OR Nazionalita = 'Francese';"
+      ],
+      "title": "Esercizio 4"
+    },
+    {
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "request": "Il titolo ed il genere dei film proiettati il giorno di Natale 2004.",
+      "solutions": [
+        "SELECT DISTINCT Titolo, Genere\nFROM FILM NATURAL\nJOIN PROIEZIONI  \nWHERE DataProiezione = '2004-12-25';     "
+      ],
+      "title": "Esercizio 5"
+    },
+    {
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "request": "Il titolo ed il genere dei film proiettati a Napoli il giorno di Natale 2004",
+      "solutions": [
+        "SELECT DISTINCT Titolo, Genere\nFROM FILM NATURAL\nJOIN PROIEZIONI  \nWHERE Citta = 'Napoli'\n  AND DataProiezione = '2004-12-25';"
+      ],
+      "title": "Esercizio 6"
+    },
+    {
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "request": "I nomi delle sale di Napoli in cui il giorno di Natale 2004 e' stato proiettato un film con R. Williams",
+      "solutions": [
+        "SELECT DISTINCT S.Nome\nFROM SALE S\nJOIN PROIEZIONI P ON S.CodSala = P.CodSala\nJOIN RECITA R ON P.CodFilm = R.CodFilm\nJOIN ATTORI A ON R.CodAttore = A.CodAttore\nWHERE S.Citta = 'Napoli'\n  AND P.DataProiezione = '2004-12-25'\n  AND A.Nome = 'R. Williams';"
+      ],
+      "title": "Esercizio 7"
+    },
+    {
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "request": "Il titolo dei film in cui recita M. Mastroianni oppure S. Loren",
+      "solutions": [
+        "SELECT DISTINCT F.Titolo\nFROM FILM F\nJOIN RECITA R ON F.CodFilm = R.CodFilm\nJOIN ATTORI A ON R.CodAttore = A.CodAttore\nWHERE A.Nome IN ('M. Mastroianni', 'S. Loren');"
+      ],
+      "title": "Esercizio 8"
+    },
+    {
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "request": "Per ogni film in cui recita un attore francese, il titolo del film e il nome dell'attore",
+      "solutions": [
+        "SELECT DISTINCT F.Titolo, A.Nome\nFROM FILM F\nJOIN RECITA R ON F.CodFilm = R.CodFilm\nJOIN ATTORI A ON R.CodAttore = A.CodAttore\nWHERE A.Nazionalita = 'Francese';"
+      ],
+      "title": "Esercizio 9"
+    },
+    {
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "request": "Per ogni film che e' stato proiettato a Pisa nel gennaio 2005, il titolo del film e il nome della sala",
+      "solutions": [
+        "SELECT DISTINCT F.Titolo, S.Nome AS NomeSala\nFROM FILM F\nJOIN PROIEZIONI P ON F.CodFilm = P.CodFilm\nJOIN SALE S ON P.CodSala = S.CodSala\nWHERE S.Citta = 'Pisa'\n  AND P.DataProiezione >= '2005-01-01'\n  AND P.DataProiezione < '2005-02-01';"
+      ],
+      "title": "Esercizio 10"
+    },
+    {
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "request": "Il numero di sale di Pisa con piu' di 60 posti (chiamando l'attributo NumeroSale)",
+      "solutions": [
+        "SELECT COUNT(*) AS NumeroSale\nFROM SALE\nWHERE Citta = 'Pisa'\n  AND Posti > 60;"
+      ],
+      "title": "Esercizio 11"
+    },
+    {
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "request": "Il numero totale di posti nelle sale di Pisa (chiamando l'attributo TotalePosti)",
+      "solutions": [
+        "SELECT SUM(Posti) AS TotalePosti\nFROM SALE\nWHERE Citta = 'Pisa';"
+      ],
+      "title": "Esercizio 12"
+    },
+    {
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "request": "Il numero e la durata media dei film interpretati da attori italiani di genere che non contenga la parola \"romantico\" (chiamandoli NumeroFilm e DurataMedia)",
+      "solutions": [
+        "SELECT COUNT(DISTINCT F.CodFilm) AS NumeroFilm,\n       AVG(F.Durata) AS DurataMedia\nFROM FILM F\nJOIN RECITA R ON F.CodFilm = R.CodFilm\nJOIN ATTORI A ON R.CodAttore = A.CodAttore\nWHERE A.Nazionalita = 'Italiana'\n  AND LOWER(F.Genere) NOT LIKE '%romantico%';"
+      ],
+      "title": "Esercizio 13"
+    },
+    {
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "request": "Il numero degli attori che hanno recitato nel film \"PULP FICTION\" di Quentin Tarantino\n (chiamandolo NumeroAttori)",
+      "solutions": [
+        "SELECT COUNT(DISTINCT R.CodAttore) AS NumeroAttori\nFROM FILM F\nJOIN RECITA R ON F.CodFilm = R.CodFilm\nWHERE F.Titolo = 'PULP FICTION'\n  AND F.Regista = 'Quentin Tarantino';"
+      ],
+      "title": "Esercizio 14"
+    },
+    {
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "request": "La somma degli incassi di tutte le proiezioni di film prodotti al di fuori del periodo 2000-2010\n (chiamandola IncassoTotale)",
+      "solutions": [
+        " SELECT SUM(P.Incasso) AS IncassoTotale\nFROM PROIEZIONI P\nJOIN FILM F ON P.CodFilm = F.CodFilm\nWHERE F.AnnoProduzione < 2000\n   OR F.AnnoProduzione > 2010;"
+      ],
+      "title": "Esercizio 15"
+    },
+    {
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "request": "Il massimo incasso mai registrato da una proiezione di un film in cui recita un attore il cui nome inizia con 'Robert'\n (chiamandolo MassimoIncasso)",
+      "solutions": [
+        "SELECT MAX(P.Incasso) AS MassimoIncasso\nFROM PROIEZIONI P\nJOIN RECITA R ON P.CodFilm = R.CodFilm\nJOIN ATTORI A ON R.CodAttore = A.CodAttore\nWHERE A.Nome LIKE 'Robert%';"
+      ],
+      "title": "Esercizio 16"
+    },
+    {
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "request": "L'incasso medio delle proiezioni per film in cui recitano attori che non hanno nazionalita' 'Italiana', 'Francese' e 'Statunitense'.\n (chiamandolo IncassoMedio)",
+      "solutions": [
+        "SELECT AVG(P.Incasso) AS IncassoMedio\nFROM PROIEZIONI P\nWHERE P.CodFilm IN (\n    SELECT DISTINCT R.CodFilm\n    FROM RECITA R\n    JOIN ATTORI A ON R.CodAttore = A.CodAttore\n    WHERE A.Nazionalita NOT IN ('Italiana', 'Francese', 'Statunitense')\n);"
+      ],
+      "title": "Esercizio 17"
+    },
+    {
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "request": "Per ogni citta', il numero di sale (chiamandolo NumeroSale)",
+      "solutions": [
+        "SELECT Citta, COUNT(*) AS NumeroSale\nFROM SALE\nGROUP BY Citta;"
+      ],
+      "title": "Esercizio 18"
+    },
+    {
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "request": "Per ogni citta', il numero di sale con più di 60 posti (chiamandolo NumeroSale)",
+      "solutions": [
+        "SELECT Citta, COUNT(*) AS NumeroSaleConPiuDi60Posti\nFROM SALE\nWHERE Posti > 60\nGROUP BY Citta;"
+      ],
+      "title": "Esercizio 19"
+    },
+    {
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "request": "Per ogni regista, il numero di film diretti dopo il 1990 (chiamandolo NumeroFilm)",
+      "solutions": [
+        "SELECT Regista, COUNT(*) AS NumeroFilm\nFROM FILM\nWHERE AnnoProduzione > 1990\nGROUP BY Regista;"
+      ],
+      "title": "Esercizio 20"
+    },
+    {
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "request": "Per ogni regista, l'incasso totale di tutte le proiezioni dei suoi film (chiamandolo IncassoTotale)",
+      "solutions": [
+        "SELECT F.Regista, SUM(P.Incasso) AS IncassoTotale\nFROM FILM F\nJOIN PROIEZIONI P ON F.CodFilm = P.CodFilm\nGROUP BY F.Regista;"
+      ],
+      "title": "Esercizio 21"
+    },
+    {
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "request": "Per ogni film di S. Spielberg, il titolo del film, il numero totale di proiezioni a Pisa e l'incasso totale (chiamandoli NumProiezioni e IncassoTotale)",
+      "solutions": [
+        "SELECT F.Titolo,\n       COUNT(P.CodProiezione) AS NumProiezioni,\n       SUM(P.Incasso) AS IncassoTotale\nFROM FILM F JOIN PROIEZIONI P ON F.CodFilm = P.CodFilm\nJOIN SALE S ON P.CodSala = S.CodSala\nWHERE F.Regista = 'S. Spielberg'\n  AND S.Citta = 'Pisa' \nGROUP BY F.CodFilm, F.Titolo;"
+      ],
+      "title": "Esercizio 22"
+    },
+    {
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "request": "Per ogni regista e per ogni attore, il numero di film del regista con l'attore (chiamandoli NumeroFilm). Restituire il nome del regista e il nome dell'attore",
+      "solutions": [
+        "SELECT F.Regista, A.Nome AS Attore, COUNT(DISTINCT F.CodFilm) AS NumeroFilm\nFROM FILM F\nJOIN RECITA R ON F.CodFilm = R.CodFilm\nJOIN ATTORI A ON R.CodAttore = A.CodAttore\nGROUP BY F.Regista, A.CodAttore, A.Nome;"
+      ],
+      "title": "Esercizio 23"
+    },
+    {
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "request": "Il regista ed il titolo dei film in cui recitano meno di 6 attori",
+      "solutions": [
+        "SELECT F.Regista, F.Titolo\nFROM FILM F\nJOIN RECITA R ON F.CodFilm = R.CodFilm\nGROUP BY F.CodFilm, F.Regista, F.Titolo\nHAVING COUNT(DISTINCT R.CodAttore) < 6;"
+      ],
+      "title": "Esercizio 24"
+    },
+    {
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "request": "Per ogni film prodotto dopo il 2000, il codice, il titolo e l'incasso totale di tutte le sue proiezioni (chiamandolo IncassoTotale)",
+      "solutions": [
+        "SELECT F.CodFilm, F.Titolo, SUM(P.Incasso) AS IncassoTotale\nFROM FILM F\nJOIN PROIEZIONI P ON F.CodFilm = P.CodFilm\nWHERE F.AnnoProduzione > 2000\nGROUP BY F.CodFilm, F.Titolo;"
+      ],
+      "title": "Esercizio 25"
+    },
+    {
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "request": "Il numero di attori dei film in cui appaiono solo attori nati prima del 1970\n(chiamandolo NumeroAttori), restituire anche codice e titolo dei film",
+      "solutions": [
+        "SELECT F.CodFilm, F.Titolo, COUNT(DISTINCT A.CodAttore) AS NumeroAttori\nFROM FILM F\nJOIN RECITA R ON F.CodFilm = R.CodFilm\nJOIN ATTORI A ON R.CodAttore = A.CodAttore\nGROUP BY F.CodFilm, F.Titolo\nELECT F.CodFilm, F.Titolo, COUNT(DISTINCT A.CodAttore) AS NumeroAttori\nFROM FILM F\nJOIN RECITA R ON F.CodFilm = R.CodFilm\nJOIN ATTORI A ON R.CodAttore = A.CodAttore\nGROUP BY F.CodFilm, F.Titolo\nHAVING MAX(A.AnnoNascita) < 1970;"
+      ],
+      "title": "Esercizio 26"
+    },
+    {
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "request": "Per ogni film di fantascienza, il titolo e l'incasso totale di tutte le sue proiezioni (chiamandolo IncassoTotale)",
+      "solutions": [
+        "SELECT F.Titolo, SUM(P.Incasso) AS IncassoTotale\nFROM FILM F JOIN PROIEZIONI P ON F.CodFilm = P.CodFilm\nWHERE F.Genere = 'Fantascienza'\nGROUP BY F.CodFilm, F.Titolo;"
+      ],
+      "title": "Esercizio 27"
+    },
+    {
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "request": "Per ogni film di fantascienza, il titolo e l'incasso totale di tutte le sue proiezioni successive al 1/1/01 (chiamandolo IncassoTotale)",
+      "solutions": [
+        "SELECT F.Titolo, SUM(P.Incasso) AS IncassoTotale\nFROM FILM F JOIN PROIEZIONI P ON F.CodFilm = P.CodFilm \nWHERE F.Genere = 'Fantascienza' AND P.DataProiezione > '2001-01-01'\nGROUP BY F.CodFilm, F.Titolo;"
+      ],
+      "title": "Esercizio 28"
+    },
+    {
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "request": "Per ogni film di fantascienza che non è mai stato proiettato prima del 1/1/01, il titolo e l'incasso totale di tutte le sue proiezioni successive al 1/1/01 (chiamandolo IncassoTotale)",
+      "solutions": [
+        "SELECT F.Titolo, SUM(P.Incasso) AS IncassoTotale\nFROM FILM F JOIN PROIEZIONI P ON F.CodFilm = P.CodFilm \nWHERE F.Genere = 'Fantascienza' \nGROUP BY F.CodFilm, F.Titolo\nHAVING MIN(P.DataProiezione) >= '2001-01-01';"
+      ],
+      "title": "Esercizio 29"
+    },
+    {
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "request": "Per ogni sala di Pisa, che nel mese di gennaio 2005 ha incassato più di 20000 euro, il nome della sala e l'incasso totale del mese di gennaio 2005 (chiamandolo IncassoTotale)",
+      "solutions": [
+        "SELECT S.Nome, SUM(P.Incasso) AS IncassoTotale\nFROM SALE S\nJOIN PROIEZIONI P ON S.CodSala = P.CodSala\nWHERE S.Citta = 'Pisa'\n  AND P.DataProiezione >= '2005-01-01'\n  AND P.DataProiezione < '2005-02-01'\nGROUP BY S.CodSala, S.Nome\nHAVING SUM(P.Incasso) > 20000;"
+      ],
+      "title": "Esercizio 30"
+    },
+    {
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "request": "Per ogni attore italiano nato tra il 1990 e il 2000 visualizzare nome attore e il titolo dei film ordinati in base al nome dell’attore",
+      "solutions": [
+        "SELECT A.Nome, F.Titolo\nFROM\nATTORI A\nINNER JOIN RECITA R ON A.CodAttore = R.CodAttore\nINNER JOIN FILM F ON R.CodFilm = F.CodFilm\nWHERE A.Nazionalita = 'Italiana' AND A.AnnoNascita BETWEEN 1990 AND 2000\nORDER BY A.Nome ASC;"
+      ],
+      "title": "Esercizio B.1"
+    },
+    {
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "request": "Film di cui non si conosce la durata in ordine alfabeti di titolo",
+      "solutions": [
+        "SELECT F.*\nFROM FILM F\nWHERE F.durata IS NULL\nORDER BY F.titolo;"
+      ],
+      "title": "Esercizio B.2"
+    },
+    {
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "request": "Determinare la data di proiezione più recente e più vecchia dei film “Signore degli anelli” nelle città capoluogo di provincia della Liguria (chiamandole DataPiuVecchia, DataPiuRecente)",
+      "solutions": [
+        "SELECT MIN(P.DataProiezione) AS DataPiuVecchia, MAX(P.DataProiezione) AS DataPiuRecente\nFROM FILM F\nINNER JOIN PROIEZIONI P ON F.CodFilm = P.CodFilm\nINNER JOIN SALE S ON P.CodSala = S.CodSala\nWHERE F.Titolo LIKE '%Signore degli anelli%'\nAND S.Citta IN ( 'Genova','Savona','La Spezia','Imperia' );"
+      ],
+      "title": "Esercizio B.3"
+    },
+    {
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "request": "Determinare il numero totale di proiezioni e l'incasso medio dei film di genere \"Drammatico\" e \"Thriller\" proiettati tra il 2024 e il 2025, in cui recitano attori con un cognome che inizia per \"De\" (chiamandoli NumeroTotaliProiezioni e IncassoMedio)",
+      "solutions": [
+        "SELECT COUNT(DISTINCT P.CodProiezione) AS NumeroTotaleProiezioni,\nAVG(P.Incasso) AS IncassoMedio\nFROM\nPROIEZIONI P\nINNER JOIN FILM F ON P.CodFilm = F.CodFilm\nINNER JOIN RECITA R ON F.CodFilm = R.CodFilm\nINNER JOIN ATTORI A ON R.CodAttore = A.CodAttore\nWHERE F.Genere IN ('Drammatico', 'Thriller')\nAND P.DataProiezione BETWEEN '2024-01-01' AND '2025-12-31' AND A.Nome LIKE '% De%';"
+      ],
+      "title": "Esercizio B.4"
+    },
+    {
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "request": "Determinare il nome degli attori di cui non si conosce la nazionalità",
+      "solutions": [
+        "SELECT Nome AS NomeAttore FROM ATTORI WHERE Nazionalita IS NULL;"
+      ],
+      "title": "Esercizio B.5"
+    },
+    {
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "request": "Calcolare l'incasso massimo, minimo e totale generato nei cinema di Roma o Milano da film che hanno una durata compresa tra i 90 e i 150 minuti, escludendo i film prodotti prima del 2000 (chiamandoli IncassoMinimo, IncassoMassimo, IncassoTotale)",
+      "solutions": [
+        "SELECT MIN(P.Incasso) AS IncassoMinimo, MAX(P.Incasso) AS IncassoMassimo,\nSUM(P.Incasso) AS IncassoTotale\nFROM FILM F INNER JOIN PROIEZIONI P ON F.CodFilm = P.CodFilm\nINNER JOIN SALE S ON P.CodSala = S.CodSala\nWHERE S.Citta IN ('Roma', 'Milano') AND F.durata BETWEEN 90 AND 150 AND F.AnnoProduzione > 2000;"
+      ],
+      "title": "Esercizio B.6"
+    },
+    {
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "request": "Ottenere la lista dei registi che hanno diretto film proiettati in sale con più di 200 posti, nei quali hanno recitato attori nati negli anni '80 di nazionalità americana o francese.",
+      "solutions": [
+        "SELECT DISTINCT F.Regista\nFROM SALE S INNER JOIN PROIEZIONI P ON S.CodSala = P.CodSala INNER JOIN\nFILM F ON P.CodFilm = F.CodFilm JOIN RECITA R ON F.CodFilm = R.CodFilm JOIN\nATTORI A ON R.CodAttore = A.CodAttore\nWHERE S.Posti > 200 AND A.AnnoNascita BETWEEN 1980 AND 1989 AND A.Nazionalita\nIN ('AMERICANA', 'FRANCESE');"
+      ],
+      "title": "Esercizio B.7"
+    },
+    {
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "request": "Contare quanti film diversi diretti da registi il cui nome NON inizia con \"Quentin\" NON sono stati proiettati nelle sale delle città di Milano, Torino , Bologna. Chiamare l'attributo NumeroFilmUnici.",
+      "solutions": [
+        "SELECT COUNT(DISTINCT F.CodFilm) AS NumeroFilmUnici\nFROM FILM F INNER JOIN PROIEZIONI P ON F.CodFilm = P.CodFilm\nINNER JOIN SALE S ON P.CodSala = S.CodSala\nWHERE F.Regista NOT LIKE 'Quentin%' AND S.Citta NOT IN ('Milano','Torino','Bologna');"
+      ],
+      "title": "Esercizio B.8"
+    },
+    {
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "request": "Determinare l'incasso massimo dei film di genere 'Fantascienza' e 'Fantasy' NON proiettati nel corso dell'anno 2025 (chiamandolo MassimoIncasso)",
+      "solutions": [
+        "SELECT MAX(P.Incasso) AS MassimoIncasso\nFROM FILM F INNER JOIN PROIEZIONI P ON F.CodFilm = P.CodFilm\nWHERE F.Genere IN ('Fantascienza','Fantasy') AND P.DataProiezione NOT BETWEEN '2025-01-01' AND '2025-12-31';"
+      ],
+      "title": "Esercizio B.9"
+    },
+    {
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "request": "Calcolare la capienza media (posti) delle sale cinematografiche che hanno proiettato film prodotti tra il 2015 e il 2023, escludendo i film con durata inferiore a 90 minuti (chiamandola MediaPostiSale).",
+      "solutions": [
+        "SELECT AVG(S.Posti) AS MediaPostiSale\nFROM SALE S INNER JOIN PROIEZIONI P ON S.CodSala = P.CodSala\nINNER JOIN FILM F ON P.CodFilm = F.CodFilm\nWHERE F.AnnoProduzione BETWEEN 2015 AND 2023 AND F.durata >= 90;"
+      ],
+      "title": "Esercizio B.10"
+    },
+    {
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "request": " l’anno di uscita del film più vecchio tra quelli che hanno nel cast attori il cui\nnome contiene \"John\" (es. John Travolta, Johnny Depp) proiettati in sale che hanno\npiù di 150 posti (chiamandolo AnnoFilmPiuVecchio).",
+      "solutions": [
+        "SELECT MIN(F.AnnoProduzione) AS AnnoFilmPiuVecchio\nFROM FILM F INNER JOIN RECITA R ON F.CodFilm = R.CodFilm\nINNER JOIN ATTORI A ON R.CodAttore = A.CodAttore\nINNER JOIN PROIEZIONI P ON F.CodFilm = P.CodFilm\nINNER JOIN SALE S ON P.CodSala = S.CodSala\nWHERE A.Nome LIKE '%John%' AND S.Posti > 150;\n"
+      ],
+      "title": "Esercizio B.11"
+    }
+  ],
+  "search_path": "liceti",
+  "title": "Liceti"
+}

@@ -1,0 +1,59 @@
+{
+  "dataset_str": "BEGIN TRANSACTION;\n\ndrop schema if exists \"bollette_utenze\" cascade;\n\ncreate schema \"bollette_utenze\";\nset search_path to \"bollette_utenze\";\n\nCREATE TABLE PROVINCE (\n    Sigla VARCHAR(10) PRIMARY KEY,\n    NomeProvincia VARCHAR(255)\n);\n\nCREATE TABLE DISTRETTI (\n    Prefisso VARCHAR(20) PRIMARY KEY,\n    NomeDistretto VARCHAR(255),\n    Provincia VARCHAR(10) REFERENCES PROVINCE(Sigla)\n);\n\nCREATE TABLE PERSONE (\n    CodiceFiscale VARCHAR(16) PRIMARY KEY,\n    Cognome VARCHAR(255),\n    Nome VARCHAR(255),\n    DataDiNascita DATE\n);\n\nCREATE TABLE UTENZE (\n    Prefisso VARCHAR(20) REFERENCES DISTRETTI(Prefisso),\n    Numero VARCHAR(20),\n    Titolare VARCHAR(16) REFERENCES PERSONE(CodiceFiscale),\n    Indirizzo VARCHAR(255),\n    PRIMARY KEY (Prefisso, Numero)\n);\n\nCREATE TABLE BOLLETTE (\n    CodiceBolletta VARCHAR(50) PRIMARY KEY,\n    Prefisso VARCHAR(20),\n    Numero VARCHAR(20),\n    DataEmissione DATE,\n    DataScadenza DATE,\n    Importo DECIMAL(10,2),\n    FOREIGN KEY (Prefisso, Numero) REFERENCES UTENZE(Prefisso, Numero)\n);\n\nCREATE TABLE PAGAMENTI (\n    CodicePagamento VARCHAR(50) PRIMARY KEY,\n    Bolletta VARCHAR(50) REFERENCES BOLLETTE(CodiceBolletta),\n    Data DATE,\n    Importo DECIMAL(10,2),\n    Modalita VARCHAR(100)\n);\n\n-- No INSERT statements (exam PDF source, no data instances provided)\n\nCOMMIT;",
+  "dbms": "postgresql",
+  "description": "Exam exercises on a utilities billing domain. Schema covers provinces, districts, users, bills and payments.",
+  "domain": "utilities billing",
+  "source": "exam_pdf",
+  "exercises": [
+    {
+      "title": "Exercise 1",
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "verified": true,
+      "request": "Determinare per ogni utenza il prefisso, il numero, il codice fiscale del titolare, l'importo totale dovuto (cio\u00e8 il totale delle bollette emesse), l'importo totale pagato (cio\u00e8 il totale dei pagamenti) e il relativo saldo.",
+      "solutions": [
+        "WITH D AS (\n    SELECT Prefisso, Numero, Titolare, SUM(Importo) AS Dovuto\n    FROM BOLLETTE\n    GROUP BY Prefisso, Numero, Titolare\n),\nP AS (\n    SELECT Prefisso, Numero, SUM(P.Importo) AS Pagato\n    FROM BOLLETTE JOIN PAGAMENTI P ON Bolletta = CodiceBolletta\n    GROUP BY Prefisso, Numero\n)\nSELECT Prefisso, Numero, Titolare, Dovuto, Pagato, Dovuto - Pagato AS Saldo\nFROM D NATURAL LEFT OUTER JOIN P;"
+      ]
+    },
+    {
+      "title": "Exercise 2",
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "verified": true,
+      "request": "Determinare le utenze per cui nell'ultimo mese (DataEmissione = 01/06/2022) sono state emesse bollette con importo superiore all'importo medio delle bollette emesse nel loro distretto.",
+      "solutions": [
+        "SELECT B.Prefisso, B.Numero\nFROM BOLLETTE B\nWHERE B.DataEmissione = DATE '2022-06-01'\nAND B.Importo > (\n    SELECT AVG(Importo)\n    FROM BOLLETTE\n    WHERE Prefisso = B.Prefisso\n    AND DataEmissione = DATE '2022-06-01'\n);"
+      ]
+    },
+    {
+      "title": "Exercise 3",
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "verified": false,
+      "request": "Determinare per ogni distretto in provincia di Genova il numero di utenze in quel distretto e l'importo totale delle bollette emesse negli ultimi 5 anni.",
+      "solutions": [
+        "SELECT Prefisso, COUNT(DISTINCT Numero), SUM(Importo)\nFROM PROVINCE JOIN DISTRETTI ON Sigla = Provincia\nNATURAL JOIN UTENZE\nNATURAL JOIN BOLLETTE\nWHERE NomeProvincia = 'Genova'\nAND DataEmissione >= CURRENT_DATE - INTERVAL '5 YEARS'\nGROUP BY Prefisso;"
+      ]
+    },
+    {
+      "title": "Exercise 4",
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "verified": true,
+      "request": "Determinare le date di emissione delle bollette di importo superiore all'importo medio delle bollette emesse per la stessa utenza.",
+      "solutions": [
+        "SELECT B.DataEmissione, B.Prefisso, B.Numero\nFROM BOLLETTE B\nWHERE B.Importo > (\n    SELECT AVG(Importo)\n    FROM BOLLETTE\n    WHERE Prefisso = B.Prefisso\n    AND Numero = B.Numero\n);"
+      ]
+    }
+  ],
+  "search_path": "bollette_utenze",
+  "title": "Exam: Bollette e Utenze"
+}

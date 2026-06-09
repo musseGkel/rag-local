@@ -1,0 +1,59 @@
+{
+  "dataset_str": "BEGIN TRANSACTION;\n\ndrop schema if exists \"tour_musicali\" cascade;\n\ncreate schema \"tour_musicali\";\nset search_path to \"tour_musicali\";\n\nCREATE TABLE ARTISTA (\n    nomeA VARCHAR(255) PRIMARY KEY,\n    gruppo VARCHAR(255),\n    genere VARCHAR(100),\n    paese VARCHAR(100)\n);\n\nCREATE TABLE BRANO (\n    branoId VARCHAR(50) PRIMARY KEY,\n    titolo VARCHAR(255),\n    durata INTEGER,\n    album VARCHAR(255)\n);\n\nCREATE TABLE TOUR (\n    titoloT VARCHAR(255) PRIMARY KEY,\n    nome VARCHAR(255),\n    dataInizio DATE,\n    dataFine DATE,\n    nomeA VARCHAR(255) REFERENCES ARTISTA(nomeA)\n);\n\nCREATE TABLE CONCERTO (\n    concertoId VARCHAR(50) PRIMARY KEY,\n    data DATE,\n    citta VARCHAR(255),\n    luogo VARCHAR(255),\n    titoloT VARCHAR(255) REFERENCES TOUR(titoloT)\n);\n\nCREATE TABLE SCALETTA (\n    concertoId VARCHAR(50) REFERENCES CONCERTO(concertoId),\n    posizione INTEGER,\n    branoId VARCHAR(50) REFERENCES BRANO(branoId),\n    PRIMARY KEY (concertoId, posizione)\n);\n\n-- No INSERT statements (exam PDF source, no data instances provided)\n\nCOMMIT;",
+  "dbms": "postgresql",
+  "description": "Exam exercises on a music tours domain. Schema covers artists, tours, concerts, setlists and songs.",
+  "domain": "music tours",
+  "source": "exam_pdf",
+  "exercises": [
+    {
+      "title": "Exercise 1",
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "verified": true,
+      "request": "Determinare gli album i cui brani non sono mai stati utilizzati come pezzi di apertura in un concerto.",
+      "solutions": [
+        "SELECT DISTINCT album\nFROM BRANO\nWHERE album NOT IN (\n    SELECT DISTINCT album\n    FROM SCALETTA NATURAL JOIN BRANO\n    WHERE posizione = 1\n);"
+      ]
+    },
+    {
+      "title": "Exercise 2",
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "verified": false,
+      "request": "Determinare per ogni artista la citt\u00e0 in cui ha tenuto il maggior numero di concerti.",
+      "solutions": [
+        "SELECT T.nomeA, citta\nFROM TOUR T NATURAL JOIN CONCERTO\nGROUP BY T.nomeA, citta\nHAVING COUNT(*) >= ALL (\n    SELECT COUNT(*)\n    FROM TOUR NATURAL JOIN CONCERTO\n    WHERE nomeA = T.nomeA\n    GROUP BY citta\n);"
+      ]
+    },
+    {
+      "title": "Exercise 3",
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "verified": true,
+      "request": "Determinare gli artisti stranieri i cui tour non sono mai passati da Genova.",
+      "solutions": [
+        "SELECT DISTINCT nomeA\nFROM ARTISTA\nWHERE paese != 'Italia'\nAND nomeA NOT IN (\n    SELECT DISTINCT nomeA\n    FROM TOUR NATURAL JOIN CONCERTO\n    WHERE citta = 'Genova'\n);"
+      ]
+    },
+    {
+      "title": "Exercise 4",
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "verified": false,
+      "request": "Determinare per ogni tour l'album da cui proviene il brano utilizzato pi\u00f9 frequentemente come brano di apertura nei concerti di quel tour.",
+      "solutions": [
+        "SELECT C.titoloT, album\nFROM BRANO NATURAL JOIN SCALETTA NATURAL JOIN CONCERTO C\nWHERE posizione = 1\nGROUP BY C.titoloT, branoId, album\nHAVING COUNT(*) >= ALL (\n    SELECT COUNT(*)\n    FROM SCALETTA NATURAL JOIN CONCERTO\n    WHERE titoloT = C.titoloT AND posizione = 1\n    GROUP BY branoId, album\n);"
+      ]
+    }
+  ],
+  "search_path": "tour_musicali",
+  "title": "Exam: Tour Musicali"
+}

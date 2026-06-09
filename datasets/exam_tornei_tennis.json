@@ -1,0 +1,95 @@
+{
+  "dataset_str": "BEGIN TRANSACTION;\n\ndrop schema if exists \"tornei_tennis\" cascade;\n\ncreate schema \"tornei_tennis\";\nset search_path to \"tornei_tennis\";\n\nCREATE TABLE GIOCATORE (\n    IdG VARCHAR(50) PRIMARY KEY,\n    Nome VARCHAR(255),\n    Cognome VARCHAR(255),\n    Genere CHAR(1),\n    DataN DATE,\n    Nazione VARCHAR(100)\n);\n\nCREATE TABLE TORNEO (\n    IdT VARCHAR(50) PRIMARY KEY,\n    NomeT VARCHAR(255),\n    Luogo VARCHAR(255),\n    DataI DATE,\n    DataF DATE,\n    NumTurni INTEGER,\n    Tipo VARCHAR(100),\n    Terreno VARCHAR(100)\n);\n\nCREATE TABLE CATEGORIA (\n    IdCat VARCHAR(50) PRIMARY KEY,\n    NomeCategoria VARCHAR(100),\n    GenereCategoria CHAR(1)\n);\n\nCREATE TABLE REGISTRAZIONE (\n    IdT VARCHAR(50) REFERENCES TORNEO(IdT),\n    IdCat VARCHAR(50) REFERENCES CATEGORIA(IdCat),\n    NumRegistrazione INTEGER,\n    DataRegistrazione DATE,\n    TestaDiSerie BOOLEAN,\n    PRIMARY KEY (IdT, IdCat, NumRegistrazione)\n);\n\nCREATE TABLE GIOCAIN (\n    IdT VARCHAR(50),\n    IdCat VARCHAR(50),\n    NumRegistrazione INTEGER,\n    IdG VARCHAR(50) REFERENCES GIOCATORE(IdG),\n    PRIMARY KEY (IdT, IdCat, NumRegistrazione, IdG),\n    FOREIGN KEY (IdT, IdCat, NumRegistrazione) REFERENCES REGISTRAZIONE(IdT, IdCat, NumRegistrazione)\n);\n\n-- No INSERT statements (exam PDF source, no data instances provided)\n-- Note: NomeCategoria values include: singolo, doppio, squadra\n\nCOMMIT;",
+  "dbms": "postgresql",
+  "description": "Exam exercises on a tennis tournament domain. Schema covers players, tournaments, categories, registrations and participation.",
+  "domain": "tennis tournaments",
+  "source": "exam_pdf",
+  "exercises": [
+    {
+      "title": "Exercise 1A",
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "verified": false,
+      "request": "Trovare le giocatrici che hanno partecipato sia nella categoria singoli che in quella doppi nello stesso torneo.",
+      "solutions": [
+        "SELECT DISTINCT IdG\nFROM GIOCATORE NATURAL JOIN GIOCAIN NATURAL JOIN CATEGORIA\nWHERE Genere = 'f' AND NomeCategoria = 'singolo'\nAND (IdG, IdT) IN (\n    SELECT DISTINCT IdG, IdT\n    FROM GIOCAIN NATURAL JOIN CATEGORIA\n    WHERE NomeCategoria = 'doppio'\n);"
+      ]
+    },
+    {
+      "title": "Exercise 1B",
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "verified": true,
+      "request": "Trovare i giocatori francesi che non sono mai stati teste di serie.",
+      "solutions": [
+        "SELECT DISTINCT IdG\nFROM GIOCATORE\nWHERE Nazione = 'Francia'\nAND IdG NOT IN (\n    SELECT DISTINCT IdG\n    FROM GIOCAIN NATURAL JOIN REGISTRAZIONE\n    WHERE TestaDiSerie = TRUE\n);"
+      ]
+    },
+    {
+      "title": "Exercise 1D",
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "verified": true,
+      "request": "Trovare i giocatori tedeschi che non hanno mai partecipato a Wimbledon.",
+      "solutions": [
+        "SELECT DISTINCT IdG\nFROM GIOCATORE\nWHERE Nazione = 'Germania'\nAND IdG NOT IN (\n    SELECT DISTINCT IdG\n    FROM GIOCAIN NATURAL JOIN TORNEO\n    WHERE NomeT = 'Wimbledon'\n);"
+      ]
+    },
+    {
+      "title": "Exercise 2A",
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "verified": true,
+      "request": "Trovare il torneo a cui hanno partecipato giocatori del maggior numero di nazioni diverse.",
+      "solutions": [
+        "SELECT DISTINCT IdT\nFROM GIOCAIN NATURAL JOIN GIOCATORE\nGROUP BY IdT\nHAVING COUNT(DISTINCT Nazione) >= ALL (\n    SELECT COUNT(DISTINCT Nazione)\n    FROM GIOCAIN NATURAL JOIN GIOCATORE\n    GROUP BY IdT\n);"
+      ]
+    },
+    {
+      "title": "Exercise 2B",
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "verified": true,
+      "request": "Trovare il giocatore che ha disputato il maggior numero di tornei diversi.",
+      "solutions": [
+        "SELECT DISTINCT IdG\nFROM GIOCAIN\nGROUP BY IdG\nHAVING COUNT(DISTINCT IdT) >= ALL (\n    SELECT COUNT(DISTINCT IdT)\n    FROM GIOCAIN\n    GROUP BY IdG\n);"
+      ]
+    },
+    {
+      "title": "Exercise 2C",
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "verified": true,
+      "request": "Trovare il torneo con il maggior numero di teste di serie.",
+      "solutions": [
+        "SELECT DISTINCT IdT\nFROM REGISTRAZIONE\nWHERE TestaDiSerie = TRUE\nGROUP BY IdT\nHAVING COUNT(*) >= ALL (\n    SELECT COUNT(*)\n    FROM REGISTRAZIONE\n    WHERE TestaDiSerie = TRUE\n    GROUP BY IdT\n);"
+      ]
+    },
+    {
+      "title": "Exercise 2D",
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "verified": true,
+      "request": "Trovare il torneo con l'et\u00e0 media dei giocatori pi\u00f9 alta.",
+      "solutions": [
+        "SELECT DISTINCT IdT\nFROM TORNEO NATURAL JOIN GIOCAIN NATURAL JOIN GIOCATORE\nGROUP BY IdT\nHAVING AVG(DataI - DataN) >= ALL (\n    SELECT AVG(DataI - DataN)\n    FROM TORNEO NATURAL JOIN GIOCAIN NATURAL JOIN GIOCATORE\n    GROUP BY IdT\n);"
+      ]
+    }
+  ],
+  "search_path": "tornei_tennis",
+  "title": "Exam: Tornei di Tennis"
+}

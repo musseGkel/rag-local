@@ -1,0 +1,114 @@
+{
+  "dataset_str": "BEGIN TRANSACTION;\n\ndrop schema if exists \"tornei_tennis\" cascade;\n\ncreate schema \"tornei_tennis\";\nset search_path to \"tornei_tennis\";\n\nCREATE TABLE GIOCATORE (\n    IdG VARCHAR(50) PRIMARY KEY,\n    Nome VARCHAR(255),\n    Cognome VARCHAR(255),\n    Genere CHAR(1),\n    DataN DATE,\n    Nazione VARCHAR(100)\n);\n\nCREATE TABLE TORNEO (\n    IdT VARCHAR(50) PRIMARY KEY,\n    NomeT VARCHAR(255),\n    Luogo VARCHAR(255),\n    DataI DATE,\n    DataF DATE,\n    NumTurni INTEGER,\n    Tipo VARCHAR(100),\n    Terreno VARCHAR(100)\n);\n\nCREATE TABLE CATEGORIA (\n    IdCat VARCHAR(50) PRIMARY KEY,\n    NomeCategoria VARCHAR(100),\n    GenereCategoria CHAR(1)\n);\n\nCREATE TABLE REGISTRAZIONE (\n    IdT VARCHAR(50) REFERENCES TORNEO(IdT),\n    IdCat VARCHAR(50) REFERENCES CATEGORIA(IdCat),\n    NumRegistrazione INTEGER,\n    DataRegistrazione DATE,\n    TestaDiSerie BOOLEAN,\n    PRIMARY KEY (IdT, IdCat, NumRegistrazione)\n);\n\nCREATE TABLE GIOCAIN (\n    IdT VARCHAR(50),\n    IdCat VARCHAR(50),\n    NumRegistrazione INTEGER,\n    IdG VARCHAR(50) REFERENCES GIOCATORE(IdG),\n    PRIMARY KEY (IdT, IdCat, NumRegistrazione, IdG),\n    FOREIGN KEY (IdT, IdCat, NumRegistrazione) REFERENCES REGISTRAZIONE(IdT, IdCat, NumRegistrazione)\n);\n\n-- No INSERT statements (exam PDF source, no data instances provided)\n-- Note: NomeCategoria values include: singolo, doppio, squadra\n\nCOMMIT;",
+  "dbms": "postgresql",
+  "description": "Correct (EXEMPLARY) LLM-generated SQL solutions for tennis tournament exercises (bd_exam), extracted from the Livani misconceptions dataset. Schema matches exam_tornei_tennis.",
+  "domain": "tennis tournaments",
+  "source": "excel_exemplary",
+  "search_path": "tornei_tennis",
+  "title": "Excel EXEMPLARY: Tornei Tennis Exercises",
+  "exercises": [
+    {
+      "title": "bd_exam_1a",
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "verified": true,
+      "source": "excel_exemplary",
+      "request": "Players who participated in both the singles and doubles categories in the same tournament",
+      "solutions": [
+        "SELECT IdG\nFROM GIOCAIN NATURAL JOIN REGISTRAZIONE\nWHERE (IdT,IdCat) Not IN (SELECT IdT,IdCat\n                          FROM REGISTRAZIONE\n                          WHERE TestaDiSerie=true)"
+      ]
+    },
+    {
+      "title": "bd_exam_1b",
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "verified": true,
+      "source": "excel_exemplary",
+      "request": "The tournament in which players from the greatest number of different nations participated",
+      "solutions": [
+        "SELECT idT \nFROM Torneo \nNATURAL JOIN Giocain \nNATURAL JOIN Giocatore\nGROUP BY idT\nHAVING COUNT(DISTINCT Nazione) >= ALL \n(SELECT COUNT(DISTINCT Nazione)\n FROM Giocain \n NATURAL JOIN Giocatore \n GROUP BY idT);",
+        "SELECT giocain.idT\nFROM giocain\nJOIN giocatore ON giocain.idG = giocatore.idG\nGROUP BY giocain.idT\nHAVING COUNT(DISTINCT giocatore.Nazione) >= ALL (\n    SELECT COUNT(DISTINCT gt.Nazione)\n    FROM giocain AS gm\n    JOIN giocatore AS gt ON gm.idG = gt.idG\n    WHERE gt.Nazione IS NOT NULL\n    GROUP BY gm.idT\n);",
+        "SELECT IdT\nFROM GIOCAIN\nNATURAL JOIN GIOCATORE\nGROUP BY IdT\nHAVING COUNT (DISTINCT Nazione) >= ALL(SELECT COUNT\n(DISTINCT Nazione) FROM GIOCAIN\nNATURAL JOIN GIOCATORE\nGROUP BY IdT)",
+        "SELECT DISTINCT IdT\nFROM GIOCAIN\nNATURAL JOIN GIOCATORE\nGROUP BY IdT\nHAVING COUNT(DISTINCT Nazione) >= ALL(SELECT COUNT(DISTINCT Nazione)\nFROM GIOCATORE\nNATURAL JOIN GIOCAIN\nGROUP BY IdT);",
+        "SELECT DISTINCT IdT\nFROM TORNEO NATURAL JOIN GIOCAIN NATURAL JOIN GIOCATORE\nGROUP BY IdT\nHAVING COUNT(DISTINCT Nazione) >= ALL(SELECT COUNT(DISTINCT Nazione)\nFROM TORNEO NATURAL JOIN GIOCAIN NATURAL JOIN GIOCATORE\nGROUP BY IdT)"
+      ]
+    },
+    {
+      "title": "bd_exam_1d",
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "verified": true,
+      "source": "excel_exemplary",
+      "request": "German players/hedgehogs who have never participated in Wimbledon",
+      "solutions": [
+        "SELECT IdG\nFROM GIOCATORE\nWHERE NAZIONE = 'Germania' AND IdG NOT IN (\n    SELECT IdT\n    FROM TORNEO\n    WHERE NomeT = 'Wimbledon'\n);",
+        "SELECT IdG\nFROM GIOCATORE\nWHERE NAZIONE = 'Germania'\nAND IdG NOT IN (\n    SELECT IdG\n    FROM GIOCAIN \n     NATURAL JOIN TORNEO\n    WHERE NomeT = 'Wimbledon'\n);",
+        "SELECT IdG\nFROM GIOCATORE\nWHERE NAZIONE = 'GERMANIA' AND IDG NOT IN (SELECT IdG\nFROM GIOCATORE\nNATURAL JOIN REGISTRAZIONE NATURAL JOIN TORNEO\nWHERE LUOGO = 'Wimbledon')",
+        "SELECT DISTINCT IdG\nFROM GIOCATORE\nWHERE NAZIONE = 'Germania'\nAND IdG NOT IN (\n    SELECT IdG\n    FROM GIOCATORE\n    NATURAL JOIN GIOCAIN\n    NATURAL JOIN REGISTRAZIONE\n    NATURAL JOIN TORNEO\n    WHERE NomeT = 'Wimbledon'\n);",
+        "SELECT IdG\nFROM GIOCATORE\nWHERE NAZIONE = 'Germania'\nAND IdG NOT IN (\n    SELECT IdG\n    FROM GIOCATORE NATURAL JOIN GIOCAIN\n    NATURAL JOIN TORNEO\n    WHERE NomeT = 'Wimbledon'\n);",
+        "SELECT IdG\nFROM GIOCATORE\nWHERE NAZIONE = 'Germania'\nAND IdG NOT IN (\n    SELECT IdG\n    FROM GIOCATORE NATURAL JOIN GIOCAIN\n    NATURAL JOIN TORNEO\n    WHERE NAZIONE = 'Germania' \n    AND NomeT = 'Wimbledon'\n);",
+        "(SELECT DISTINCT IdG\nFROM GIOCATORE\nWHERE NAZIONE = 'Germania')\nEXCEPT\n(SELECT DISTINCT IdG\nFROM GIOCAIN\nNATURAL JOIN TORNEO\nWHERE NomeT = 'Wimbledon');"
+      ]
+    },
+    {
+      "title": "bd_exam_2a",
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "verified": true,
+      "source": "excel_exemplary",
+      "request": "The French players/hedgehogs who have never been TestaDiSerie (Boolean attribute TestaDiSerie)",
+      "solutions": [
+        "SELECT IdG\nFROM GIOCATORE\nWHERE Nazione = 'Francia' AND IdG NOT IN\n(SELECT IdG\nFROM GIOCATORE NATURAL JOIN REGISTRAZIONE\nWHERE TestaDiSerie = 'false')",
+        "SELECT IdG FROM GIOCATORE\nWHERE Nazione = 'Francia' AND IdG NOT IN\n(SELECT IdG FROM GIOCATORE NATURAL JOIN GIOCAIN NATURAL JOIN REGISTRAZIONE WHERE TestaDiSerie = true)",
+        "SELECT IdG\nFROM GIOCATORE\nWHERE Nazione = 'Francia'\nEXCEPT\nSELECT DISTINCT IdG\nFROM GIOCAIN NATURAL JOIN REGISTRAZIONE\nWHERE TestaDiSerie IS TRUE",
+        "SELECT IdG\nFROM GIOCATORE\nWHERE Nazione = 'Francia'\nAND IdG NOT IN (SELECT IdG FROM GIOCAIN NATURAL JOIN REGISTRAZIONE WHERE TestaDiSerie = TRUE)",
+        "SELECT DISTINCT IdG\nFROM GIOCATORE NATURAL JOIN GIOCAIN NATURAL JOIN REGISTRAZIONE\nWHERE Nome = 'Francia' AND IdG NOT IN (SELECT DISTINCT IdG FROM GIOCATORE NATURAL JOIN GIOCAIN NATURAL JOIN REGISTRAZIONE WHERE Nome = 'Francia' AND TestaDiSerie = TRUE)",
+        "SELECT DISTINCT IdG\nFROM GIOCATORE\nWHERE Nazione = 'Francia' AND IdG NOT IN (SELECT IdG FROM GIOCAIN,REGISTRAZIONE where \nTestaDiSerie = TRUE)"
+      ]
+    },
+    {
+      "title": "bd_exam_2b",
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "verified": true,
+      "source": "excel_exemplary",
+      "request": "The player who has played the most different tournaments",
+      "solutions": [
+        "SELECT DISTINCT IdG\nFROM GIOCAIN C\nGROUP BY IdG\nHAVING COUNT(DISTINCT C.IdT)>=ALL(SELECT COUNT(DISTINCT IdT)\nFROM GIOCAIN\nGROUP BY IdG)",
+        "SELECT IDG FROM GIOCAIN\nGROUP BY IDG\nHAVING COUNT(IDT) >= ALL(SELECT COUNT(IDT)\nFROM GIOCAIN\nGROUP BY IDT)",
+        "SELECT IdG\nFROM GIOCAIN\nGROUP BY IdG\nHAVING COUNT(DISTINCT IdT) >= ALL(SELECT COUNT(DISTINCT IdT)\nFROM GIOCAIN\nGROUP BY IdG)",
+        "SELECT IdG FROM GIOCAIN\nGROUP BY idG\nHAVING COUNT (DISTINCT idT) >= ALL(SELECT COUNT(DISTINCT idT)\nFROM GIOCAIN\nGROUP BY IdG)",
+        "SELECT IdG\nFROM GIOCATORE NATURAL JOIN GIOCAIN NATURAL JOIN TORNEO\nGROUP BY IdG\nHAVING COUNT(IdT) >= ALL(SELECT COUNT(IdT)\nFROM GIOCATORE NATURAL JOIN GIOCAIN NATURAL JOIN TORNEO GROUP BY IdG)"
+      ]
+    },
+    {
+      "title": "bd_exam_2c",
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "verified": true,
+      "source": "excel_exemplary",
+      "request": "The tournament with the highest number teste di serie",
+      "solutions": [
+        "SELECT IdT \nFROM TORNEO T \nWHERE (\n    SELECT COUNT(*)\n    FROM REGISTRAZIONE R\n    WHERE R.IdT = T.IdT AND R.TestaDiSerie\n) >= ALL (\n    SELECT COUNT(*)\n    FROM REGISTRAZIONE\n    WHERE TestaDiSerie\n    GROUP BY IdT\n);",
+        "SELECT IdT\nFROM REGISTRAZIONE\nWHERE TestaDiSerie = 'True'\nGROUP BY IdT\nHAVING COUNT(TestaDiSerie) >= ALL (\n    SELECT COUNT(TestaDiSerie)\n    FROM REGISTRAZIONE\n    WHERE TestaDiSerie = 'True'\n    GROUP BY IdT\n);",
+        "SELECT IdT\nFROM REGISTRAZIONE\nWHERE TestaDiSerie = 'True'\nGROUP BY IdT\nHAVING COUNT(*) >= ALL (\n    SELECT COUNT(*)\n    FROM REGISTRAZIONE\n    WHERE TestaDiSerie = 'True'\n    GROUP BY IdT\n);",
+        "SELECT IdT\nFROM REGISTRAZIONE\nWHERE TestaDiSerie = 'true'\nGROUP BY IdT\nHAVING COUNT(*) >= ALL (\n    SELECT COUNT(*)\n    FROM REGISTRAZIONE\n    WHERE TestaDiSerie = 'true'\n    GROUP BY IdT\n);",
+        "SELECT IdT\nFROM REGISTRAZIONE\nGROUP BY IdT\nHAVING COUNT(TestaDiSerie) >= ALL (\n    SELECT COUNT(TestaDiSerie)\n    FROM REGISTRAZIONE\n    GROUP BY IdT\n);",
+        "SELECT IdT\nFROM REGISTRAZIONE\nWHERE TestaDiSerie = True\nGROUP BY IdT\nHAVING COUNT(TestaDiSerie) >= ALL (\n    SELECT COUNT(TestaDiSerie)\n    FROM REGISTRAZIONE\n    WHERE TestaDiSerie = True\n    GROUP BY IdT\n);",
+        "SELECT IdT\nFROM REGISTRAZIONE\nWHERE TestaDiSerie = True\nGROUP BY IdT\nHAVING COUNT(*) >= ALL (\n    SELECT COUNT(*)\n    FROM REGISTRAZIONE\n    WHERE TestaDiSerie = True\n    GROUP BY IdT\n);"
+      ]
+    }
+  ]
+}

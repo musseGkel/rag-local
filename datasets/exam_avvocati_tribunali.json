@@ -1,0 +1,63 @@
+{
+  "dataset_str": "BEGIN TRANSACTION;\n\ndrop schema if exists \"avvocati_tribunali\" cascade;\n\ncreate schema \"avvocati_tribunali\";\nset search_path to \"avvocati_tribunali\";\n\nCREATE TABLE PERSONA (\n    CF VARCHAR(16) PRIMARY KEY,\n    Nome VARCHAR(255),\n    Indirizzo VARCHAR(255),\n    Citta VARCHAR(255),\n    Provincia VARCHAR(50),\n    CAP VARCHAR(10),\n    Telefono VARCHAR(20),\n    DataNascita DATE\n);\n\nCREATE TABLE AVVOCATO (\n    AvvocatoID VARCHAR(50) PRIMARY KEY,\n    CF VARCHAR(16) REFERENCES PERSONA(CF)\n);\n\nCREATE TABLE SPECIALIZZAZIONE (\n    CodSpec VARCHAR(50) PRIMARY KEY,\n    NomeSpec VARCHAR(255)\n);\n\nCREATE TABLE HA (\n    AvvocatoID VARCHAR(50) REFERENCES AVVOCATO(AvvocatoID),\n    CodSpec VARCHAR(50) REFERENCES SPECIALIZZAZIONE(CodSpec),\n    PRIMARY KEY (AvvocatoID, CodSpec)\n);\n\nCREATE TABLE ISCRIZIONE (\n    AvvocatoID VARCHAR(50) REFERENCES AVVOCATO(AvvocatoID),\n    NomeAlbo VARCHAR(255),\n    Data DATE,\n    PRIMARY KEY (AvvocatoID, NomeAlbo)\n);\n\nCREATE TABLE TRIBUNALE (\n    IdTrib VARCHAR(50) PRIMARY KEY,\n    NomeTribunale VARCHAR(255),\n    Citta VARCHAR(255),\n    Regione VARCHAR(100),\n    CAP VARCHAR(10)\n);\n\nCREATE TABLE GIUDICE (\n    GiudiceID VARCHAR(50) PRIMARY KEY,\n    CF VARCHAR(16) REFERENCES PERSONA(CF),\n    AnniEsperienza INTEGER,\n    IdTrib VARCHAR(50) REFERENCES TRIBUNALE(IdTrib)\n);\n\nCREATE TABLE CAUSA (\n    IdTrib VARCHAR(50) REFERENCES TRIBUNALE(IdTrib),\n    NumCausa INTEGER,\n    DescrizioneCausa TEXT,\n    TipoCausa VARCHAR(100),\n    PRIMARY KEY (IdTrib, NumCausa)\n);\n\nCREATE TABLE UDIENZA (\n    IdTrib VARCHAR(50),\n    NumCausa INTEGER,\n    NumUdienza INTEGER,\n    Data DATE,\n    Ora TIME,\n    Stanza VARCHAR(50),\n    GiudiceID VARCHAR(50) REFERENCES GIUDICE(GiudiceID),\n    PRIMARY KEY (IdTrib, NumCausa, NumUdienza),\n    FOREIGN KEY (IdTrib, NumCausa) REFERENCES CAUSA(IdTrib, NumCausa)\n);\n\nCREATE TABLE COINVOLGE (\n    CF VARCHAR(16) REFERENCES PERSONA(CF),\n    NumCausa INTEGER,\n    IdTrib VARCHAR(50),\n    RuoloP VARCHAR(100),\n    PRIMARY KEY (CF, NumCausa, IdTrib),\n    FOREIGN KEY (IdTrib, NumCausa) REFERENCES CAUSA(IdTrib, NumCausa)\n);\n\nCREATE TABLE RAPPRESENTA (\n    AvvocatoID VARCHAR(50) REFERENCES AVVOCATO(AvvocatoID),\n    CF VARCHAR(16) REFERENCES PERSONA(CF),\n    NumCausa INTEGER,\n    IdTrib VARCHAR(50),\n    RuoloA VARCHAR(100),\n    PRIMARY KEY (AvvocatoID, CF, NumCausa, IdTrib),\n    FOREIGN KEY (IdTrib, NumCausa) REFERENCES CAUSA(IdTrib, NumCausa)\n);\n\n-- No INSERT statements (exam PDF source, no data instances provided)\n\nCOMMIT;",
+  "dbms": "postgresql",
+  "description": "Exam exercises on a legal domain. Schema covers persons, lawyers, specializations, bar memberships, courts, judges, cases, hearings and legal representation.",
+  "domain": "legal system",
+  "source": "exam_pdf",
+  "exercises": [
+    {
+      "title": "Exercise 1A",
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "verified": true,
+      "request": "Determinare le persone coinvolte in una causa per cui non \u00e8 presente l'avvocato che le rappresenta in quella causa.",
+      "solutions": [
+        "SELECT DISTINCT CF\nFROM COINVOLGE\nWHERE (CF, IdTrib, NumCausa) NOT IN (\n    SELECT CF, IdTrib, NumCausa\n    FROM RAPPRESENTA\n);",
+        "SELECT DISTINCT C.CF\nFROM COINVOLGE C\nWHERE NOT EXISTS (\n    SELECT *\n    FROM RAPPRESENTA\n    WHERE CF = C.CF\n    AND IdTrib = C.IdTrib\n    AND NumCausa = C.NumCausa\n);",
+        "SELECT DISTINCT CF\nFROM COINVOLGE LEFT OUTER NATURAL JOIN RAPPRESENTA\nWHERE AvvocatoID IS NULL;"
+      ]
+    },
+    {
+      "title": "Exercise 2A",
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "verified": true,
+      "request": "Determinare i giudici il cui numero di anni di esperienza \u00e8 superiore alla media degli anni di esperienza dei giudici appartenenti allo stesso tribunale.",
+      "solutions": [
+        "SELECT G.GiudiceID\nFROM GIUDICE G\nWHERE G.AnniEsperienza > (\n    SELECT AVG(AnniEsperienza)\n    FROM GIUDICE\n    WHERE IdTrib = G.IdTrib\n);"
+      ]
+    },
+    {
+      "title": "Exercise 1B",
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "verified": true,
+      "request": "Determinare i giudici assegnati a un tribunale che non hanno ancora presieduto udienze in quel tribunale.",
+      "solutions": [
+        "SELECT DISTINCT GiudiceID\nFROM GIUDICE\nWHERE (GiudiceID, IdTrib) NOT IN (\n    SELECT GiudiceID, IdTrib\n    FROM UDIENZA\n);",
+        "SELECT DISTINCT G.GiudiceID\nFROM GIUDICE G\nWHERE NOT EXISTS (\n    SELECT *\n    FROM UDIENZA\n    WHERE GiudiceID = G.GiudiceID\n    AND IdTrib = G.IdTrib\n);",
+        "SELECT DISTINCT GiudiceID\nFROM GIUDICE LEFT OUTER NATURAL JOIN UDIENZA\nWHERE NumCausa IS NULL;"
+      ]
+    },
+    {
+      "title": "Exercise 2B",
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "verified": true,
+      "request": "Determinare gli avvocati la cui anzianit\u00e0 di iscrizione a un albo \u00e8 superiore alla media di anzianit\u00e0 di iscrizione degli avvocati iscritti allo stesso albo.",
+      "solutions": [
+        "SELECT I.AvvocatoID\nFROM ISCRIZIONE I\nWHERE CURRENT_DATE - I.Data > (\n    SELECT AVG(CURRENT_DATE - Data)\n    FROM ISCRIZIONE\n    WHERE NomeAlbo = I.NomeAlbo\n);"
+      ]
+    }
+  ],
+  "search_path": "avvocati_tribunali",
+  "title": "Exam: Avvocati e Tribunali"
+}

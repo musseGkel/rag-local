@@ -1,0 +1,211 @@
+{
+  "dataset_str": "BEGIN TRANSACTION;\n\ndrop schema if exists \"db_lab2\" cascade;\n\ncreate schema \"db_lab2\";\nset search_path to \"db_lab2\";\n\n-- Schema DDL not available for this dataset.\n-- Tables referenced in exercises: studenti, corsidilaurea, esami,\n--   professori, pianidistudio.\n-- This is a university student/exam management schema.\n\nCOMMIT;",
+  "dbms": "postgresql",
+  "description": "Correct (EXEMPLARY) LLM-generated SQL solutions for db_lab_2 exercises (university student/course management schema). Schema DDL not available; exercises are included as NL+SQL retrieval examples.",
+  "domain": "university student management",
+  "source": "excel_exemplary",
+  "search_path": "db_lab2",
+  "title": "Excel EXEMPLARY: DB Lab 2 Exercises",
+  "exercises": [
+    {
+      "title": "db_lab_2-1",
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "verified": true,
+      "source": "excel_exemplary",
+      "request": "List the student ID and names of students enrolled before the academic year 2007/2008 who are not yet in their thesis phase (have not been assigned any advisor).",
+      "solutions": [
+        "SELECT matricola, nome, cognome\nFROM studenti\nWHERE iscrizione < 2007 AND relatore IS NULL",
+        "SELECT Matricola, nome, cognome  \nFROM studenti  \nWHERE Relatore IS NULL AND Iscrizione < 2007;",
+        "SELECT matricola , nome , cognome\nFROM studenti\nwhere iscrizione < 2007 and relatore is null;",
+        "SELECT Matricola, Nome, Cognome\nFROM Studenti\nWHERE Iscrizione < 2007 AND Relatore IS NULL;",
+        "SELECT matricola, cognome, nome FROM studenti\nWHERE iscrizione<2007 AND relatore IS NULL;",
+        "SELECT matricola, cognome, nome\nFROM studenti\nWHERE relatore isnull AND iscrizione <= 2006",
+        "SELECT Matricola, Cognome, Nome\nFROM Studenti\nWHERE Iscrizione < 2007 AND Relatore IS NULL",
+        "SELECT matricola, nome, cognome FROM studenti WHERE iscrizione < 2007 AND relatore IS NULL;",
+        "select Matricola, Cognome, Nome\nfrom Studenti\nwhere Relatore is null and Iscrizione < '2007';",
+        "SELECT matricola, cognome, nome\nFROM studenti\nWHERE iscrizione < 2007 AND relatore IS NULL;",
+        "SELECT \n\tmatricola, nome, cognome\nFROM \n\tstudenti\nwhere \n\tiscrizione < 2007 AND relatore IS NULL;",
+        "select Matricola , Nome , cognome\nfrom studenti\nwhere iscrizione < 2007 and relatore is null;",
+        "SELECT Matricola, Cognome, Nome\nFROM Studenti\nWHERE Iscrizione < 2007\n  AND Relatore IS NULL;"
+      ]
+    },
+    {
+      "title": "db_lab_2-2",
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "verified": true,
+      "source": "excel_exemplary",
+      "request": "List the list of degree courses, in alphabetical order by faculty and course name, activated before the academic year 2006/2007 (excluded) and after the academic year 2009/2010 (excluded).",
+      "solutions": [
+        "SELECT facolta, denominazione\nFROM corsidilaurea\nWHERE attivazione < '2006/2007'\n\tOR attivazione > '2009/2010'\nORDER BY facolta ASC, denominazione ASC;",
+        "SELECT facolta, denominazione\nFROM corsidilaurea\nWHERE attivazione NOT BETWEEN '2006/2007' AND '2009/2010'\nORDER BY facolta, denominazione",
+        "select facolta, denominazione from corsidilaurea\nwhere attivazione <'2006/2007' or attivazione >'2009/2010'\norder by facolta asc;",
+        "SELECT facolta,denominazione\nFROM corsidilaurea\nWHERE attivazione<'2006' OR attivazione>'2010'\nORDER BY facolta,denominazione",
+        "SELECT cdl.facolta, cdl.denominazione FROM corsidilaurea AS cdl WHERE cdl.attivazione NOT BETWEEN '2006/2007' AND '2009/2010' ORDER BY cdl.facolta, cdl.denominazione",
+        "SELECT facolta, denominazione\nFROM corsidilaurea\nWHERE attivazione<'2006/2007' OR attivazione>'2009/2010'\nORDER BY facolta, denominazione",
+        "SELECT facolta, denominazione FROM corsidilaurea\nWHERE attivazione<'2006' OR attivazione>'2010' \nORDER BY facolta, denominazione ASC;",
+        "select Facolta, Denominazione\nfrom CorsiDiLaurea\nwhere (Attivazione <'2006/2007') or (Attivazione >'2009/2010')\norder by Facolta, Denominazione asc;",
+        "SELECT Facolta, Denominazione\nFROM CorsiDiLaurea\nWHERE Attivazione NOT BETWEEN '2006/2007' AND '2009/2010'\nORDER BY Facolta, Denominazione;",
+        "select facolta , denominazione \nfrom corsidilaurea\nwhere attivazione < '2006/2007' or attivazione > '2009/2010'\norder by facolta asc , denominazione asc;"
+      ]
+    },
+    {
+      "title": "db_lab_2-3",
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "verified": true,
+      "source": "excel_exemplary",
+      "request": "List the student ID and names, in reverse student ID order, of students whose last name is not ‘Serra’, ‘Melogno’ or ‘Giunchi’ or who reside in a city among Genova, La Spezia, and Savona.",
+      "solutions": [
+        "select matricola,nome,cognome from studenti\nwhere cognome not in ('Serra','Melogno','Giunchi') or \nresidenza in ('Genova','La Spezia','Savona')\norder by matricola desc;",
+        "SELECT s.matricola, s.cognome, s.nome FROM studenti AS s WHERE s.cognome NOT IN ('Serra','Melogno','Giunchi') OR s.residenza IN ('Genova','La Spezia','Savona') ORDER BY s.matricola DESC",
+        "SELECT Matricola, Nome, Cognome\nFROM Studenti\nWHERE Cognome NOT IN ('Serra', 'Melogno', 'Giunchi')\nOR Residenza IN ('Genova', 'La Spezia', 'Savona')\nORDER BY Matricola DESC;",
+        "select matricola, cognome, nome from studenti\nwhere cognome NOT IN ('Serra', 'Melogno', 'Giunchi') OR residenza IN ('Genova', 'La Spezia', 'Savona')\norder by matricola desc",
+        "SELECT studenti.matricola, studenti.nome, studenti.cognome\nFROM studenti\nWHERE studenti.cognome NOT IN ('Serra','Melogno','Giunchi') \n\tOR studenti.residenza IN ('Genova','La Spezia','Savona')\nORDER BY studenti.matricola DESC",
+        "select Matricola, Cognome, Nome\nfrom Studenti\nwhere (Cognome not in ('Serra', 'Melogno', 'Giunchi') or Residenza in ('Genova', 'La Spezia', 'Savona'))\norder by Matricola desc;",
+        "SELECT matricola, cognome, nome\nFROM studenti\nWHERE cognome NOT IN('Serra', 'Melogno', 'Giunchi') OR residenza IN('Genova', 'La Spezia', 'Savona')\nORDER BY matricola DESC;",
+        "select matricola , cognome , nome\nfrom studenti\nwhere cognome not in('Serra','Melogno','Giunchi')\n\t  or residenza in ('Genova','Spezia','Savona')\norder by matricola desc;",
+        "SELECT Matricola, Cognome, Nome\nFROM Studenti\nWHERE Cognome NOT IN ('Serra', 'Melogno', 'Giunchi')\n   OR Residenza IN ('Genova', 'La Spezia', 'Savona')\nORDER BY Matricola DESC;",
+        "SELECT Matricola, Nome, Cognome\nFROM Studenti\nWHERE (Cognome NOT IN ('Serra', 'Melogno', 'Giunchi'))\n   OR (Residenza IN ('Genova', 'La Spezia', 'Savona'))\nORDER BY Matricola DESC;",
+        "SELECT Matricola, Cognome, Nome\nFROM Studenti\nWHERE (Cognome NOT IN ('Serra', 'Melogno', 'Giunchi'))\n   OR (Residenza IN ('Genova', 'La Spezia', 'Savona'))\nORDER BY Matricola DESC;"
+      ]
+    },
+    {
+      "title": "db_lab_2-4",
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "verified": true,
+      "source": "excel_exemplary",
+      "request": "List the student ID of students who graduated in computer science (informatica) before November 2009.",
+      "solutions": [
+        "SELECT matricola\nFROM studenti JOIN corsidilaurea ON studenti.corsodilaurea=corsidilaurea.id\nWHERE laurea<'2009-11-01'\n\tAND denominazione='Informatica';",
+        "select matricola from studenti join corsidilaurea on studenti.corsodilaurea=corsidilaurea.id \nwhere laurea<'1/11/2009' and corsidilaurea.denominazione='Informatica';",
+        "SELECT matricola\nFROM studenti  \nJOIN corsidilaurea\nON studenti.corsodilaurea = corsidilaurea.id\nWHERE corsidilaurea.denominazione = 'Informatica' AND studenti.laurea < '2009-11-01'",
+        "select matricola from studenti join corsidilaurea on studenti.corsodilaurea=corsidilaurea.id\nwhere (laurea<'2009-11-01' and corsidilaurea.denominazione='Informatica');",
+        "SELECT matricola FROM studenti join corsidilaurea on corsodilaurea=id\nWHERE laurea<'2009-11-01' AND denominazione='Informatica';",
+        "select matricola from studenti\njoin corsidilaurea on id = corsodilaurea\nwhere corsidilaurea.denominazione = 'Informatica' and laurea < '2009-11-01'"
+      ]
+    },
+    {
+      "title": "db_lab_2-5",
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "verified": true,
+      "source": "excel_exemplary",
+      "request": "Return alphabetical list of student names, with the last name of their associated advisor for each one.",
+      "solutions": [
+        "SELECT studenti.nome, studenti.cognome, professori.cognome\nFROM studenti JOIN professori ON studenti.relatore=professori.id\nORDER BY studenti.cognome ASC, studenti.nome ASC;",
+        "select studenti.cognome, studenti.nome, professori.cognome\nfrom studenti\ninner join professori on relatore=professori.id\norder by studenti.cognome asc, studenti.nome asc;",
+        "select studenti.nome,studenti.cognome,professori.cognome \"relatore\" from studenti join professori on studenti.relatore=professori.id\norder by studenti.cognome asc",
+        "SELECT studenti.cognome, studenti.nome, professori.cognome\nFROM studenti  \nJOIN professori\nON studenti.relatore = professori.id\nORDER BY studenti.cognome, studenti.nome",
+        "SELECT  Studenti.Cognome, Studenti.Nome, Professori.Cognome\nFROM Studenti JOIN Professori ON Studenti.Relatore = Professori.Id\nORDER BY Studenti.Cognome, Studenti.Nome;",
+        "SELECT s.cognome, s.nome, p.cognome FROM studenti AS s JOIN professori AS p ON s.relatore=p.id ORDER BY s.cognome, s.nome",
+        "SELECT s.Nome, s.Cognome, p.Cognome AS \"Cognome Relatore\"\nFROM Studenti s\nJOIN Professori p ON s.Relatore = p.id\nORDER BY s.Cognome, s.Nome;",
+        "SELECT studenti.cognome, studenti.nome, professori.cognome\nFROM studenti JOIN professori ON professori.id = studenti.relatore\nORDER BY studenti.cognome, studenti.nome;",
+        "select studenti.nome,studenti.cognome,professori.cognome from studenti join professori\non studenti.relatore=professori.id\norder by studenti.cognome,studenti.nome;",
+        "SELECT studenti.nome, studenti.cognome, professori.cognome FROM studenti join professori on studenti.relatore=professori.id\nORDER BY studenti.cognome, professori.cognome ASC;",
+        "SELECT S.Cognome, S.Nome, P.Cognome \nFROM Studenti S JOIN Professori P ON id = Relatore\nORDER BY S.Cognome ASC",
+        "SELECT studenti.cognome, studenti.nome, professori.cognome FROM studenti JOIN professori ON studenti.relatore = professori.id ORDER BY studenti.cognome ASC , studenti.nome ASC;",
+        "select Studenti.Cognome, Studenti.Nome, Professori.Cognome\nfrom Studenti\njoin Professori on Studenti.Relatore = Professori.Id\norder by Studenti.Cognome asc;",
+        "SELECT studenti.cognome, studenti.nome, professori.cognome\nFROM studenti JOIN professori on relatore=id \nORDER BY studenti.cognome, studenti.nome ASC;",
+        "select studenti.cognome,studenti.nome,professori.cognome\nfrom studenti join professori on relatore = id\norder by studenti.cognome asc , studenti.nome asc;",
+        "SELECT studenti.nome,studenti.cognome,professori.cognome FROM studenti \nINNER JOIN professori ON professori.id=studenti.relatore\nORDER BY studenti.cognome,studenti.nome ASC"
+      ]
+    },
+    {
+      "title": "db_lab_2-6",
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "verified": true,
+      "source": "excel_exemplary",
+      "request": "Return the list, without duplicates and in reverse alphabetical order, of students who submitted the study plan for the fifth year of the computer science (informatica) degree course in the academic year 2011/2012 and are in the thesis phase (have been assigned an advisor).",
+      "solutions": [
+        "SELECT DISTINCT studenti.cognome, studenti.nome\nFROM studenti  \nJOIN pianidistudio\nON studenti.matricola = pianidistudio.studente\nWHERE pianidistudio.anno = 5 AND pianidistudio.annoaccademico = 2011 AND studenti.relatore IS NOT NULL\nORDER BY studenti.cognome DESC, studenti.nome DESC",
+        "SELECT DISTINCT s.cognome, s.nome FROM studenti AS s JOIN pianidistudio AS pds ON s.matricola=pds.studente AND s.relatore IS NOT NULL AND pds.annoaccademico=2011 AND pds.anno=5 ORDER BY s.cognome DESC, s.nome DESC",
+        "select distinct cognome,nome from studenti join pianidistudio on matricola=studente and relatore is not null and annoaccademico=2011 and anno=5 order by studenti.cognome DESC, studenti.nome DESC;",
+        "select cognome,nome from studenti join pianidistudio on studenti.matricola=pianidistudio.studente\nwhere (anno=5 and annoaccademico=2011 and relatore is not null)\norder by cognome desc;",
+        "SELECT DISTINCT studenti.cognome, studenti.nome FROM studenti join pianidistudio on \nstudenti.matricola=pianidistudio.studente\nWHERE pianidistudio.anno=5 AND pianidistudio.annoaccademico=2011 AND studenti.relatore IS NOT NULL\nORDER BY studenti.cognome DESC;",
+        "select cognome, nome from studenti\njoin pianidistudio on studente = matricola\nwhere pianidistudio.anno = '5' \nAND pianidistudio.annoaccademico = '2011'\nAND studenti.relatore IS NOT NULL\nORDER BY cognome desc",
+        "SELECT DISTINCT cognome, nome\nFROM studenti JOIN corsidilaurea on studenti.corsodilaurea = corsidilaurea.id \nJOIN pianidistudio on pianidistudio.studente = studenti.matricola\nWHERE pianidistudio.anno = 5 AND pianidistudio.annoaccademico = '2011' and relatore IS NOT NULL\nORDER BY cognome DESC;",
+        "select distinct cognome , nome\nfrom pianidistudio join studenti on studente = matricola\nwhere annoaccademico = 2011 and anno = 5 and relatore is not null\norder by cognome desc , nome desc;",
+        "SELECT DISTINCT studenti.nome,studenti.cognome FROM studenti \nINNER JOIN pianidistudio ON pianidistudio.studente=studenti.matricola\nWHERE pianidistudio.anno = 5 AND studenti.relatore  IS NOT NULL and pianidistudio.annoaccademico = 2011\nORDER BY studenti.cognome DESC"
+      ]
+    },
+    {
+      "title": "db_lab_2-7",
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "verified": true,
+      "source": "excel_exemplary",
+      "request": "List last name, first name, and status (‘studente’/‘professore’) of students and professors. [A query can return a constant value; just include this value in the SELECT clause.]",
+      "solutions": [
+        "SELECT cognome, nome, 'studente' AS qualifica\nFROM studenti \nUNION \nSELECT cognome, nome, 'professore' AS qualifica\nFROM professori;",
+        "select studenti.cognome, studenti.nome, 'Studente' as Qualifica\nfrom studenti\nUNION\nselect professori.cognome, professori.nome, 'Professore' as Qualifica\nfrom professori;",
+        "SELECT studenti.nome, studenti.cognome, 'studente' AS qualifica\nFROM studenti \nUNION \nSELECT professori.nome, professori.cognome, 'professore' AS qualifica\nFROM professori",
+        "select studenti.cognome,studenti.nome, 'studente' as qualifica from studenti \nunion \nselect professori.cognome,professori.nome, 'professore' as qualifica from professori",
+        "SELECT studenti.cognome, studenti.nome, 'STUDENTE' as qualifica\nFROM studenti\nUNION\nSELECT professori.cognome, professori.nome, 'PROFESSORE' as qualifica\nFROM professori",
+        "SELECT Nome, Cognome, 'Studente' as Qualifica\nFROM Studenti \n\nUNION \n\nSELECT Nome, Cognome, 'Professore' as Qualifica\nFROM Professori;",
+        "SELECT s.nome, s.cognome, 'studente' AS qualifica FROM studenti AS s UNION SELECT p.nome, p.cognome, 'professore' AS qualifica FROM professori AS p",
+        "select nome,cognome, 'studente' as qualifica from studenti UNION select nome,cognome, 'professore' as qualifica from professori;",
+        "SELECT Cognome, Nome, 'Studente' AS Qualifica \nFROM Studenti\nUNION\nSELECT Cognome, Nome, 'Professore' AS Qualifica \nFROM Professori;",
+        "SELECT studenti.cognome, studenti.nome, 'studente' AS qualifica /*si crea una colonna virtuale con valore costante scelto da noi*/\nFROM studenti\n\nUNION \n\nSELECT professori.cognome, professori.nome, 'professore' AS qualifica\nFROM professori;",
+        "select cognome,nome,'studente' as qualifica from studenti\nunion select cognome,nome,'professore' as qualifica from professori;",
+        "(SELECT studenti.nome, studenti.cognome, 'studente' AS qualifica\nFROM studenti)\nUNION\n(SELECT professori.nome, professori.cognome, 'professore' AS qualifica\nFROM professori);",
+        "select studenti.cognome, studenti.nome, 'studente' as qualifica from studenti\nUNION\nselect professori.cognome, professori.nome, 'professore' as qualifica from professori",
+        "select Studenti.nome,Studenti.cognome, 'Studente' AS professione\nfrom Studenti \nUNION\nselect professori.nome,professori.cognome,'Professore' AS professione\nfrom Professori;",
+        "SELECT studenti.cognome, studenti.nome, 'studente'\nFROM studenti\nUNION\nSELECT professori.cognome, professori.nome, 'professore'\nFROM professori",
+        "SELECT nome, cognome, 'studente' FROM studenti UNION SELECT nome, cognome, 'professore' FROM professori ;",
+        "SELECT Studenti.cognome, Studenti.nome, 'studente' from Studenti\nUNION\nSELECT Professori.cognome, Professori.nome, 'professore' from Professori",
+        "SELECT Cognome, Nome, 'studente' AS Qualifica\nFROM Studenti\nUNION ALL\nSELECT Cognome, Nome, 'professore' AS Qualifica\nFROM Professori;",
+        "select studenti.cognome,studenti.nome,'studente'as qualifica\nfrom studenti\nunion \nselect professori.cognome,professori.nome,'professori'as qualifica\nfrom professori;",
+        "SELECT studenti.nome,studenti.cognome,'STUDENTE' AS QUALIFICA FROM studenti UNION SELECT professori.nome,professori.cognome,'PROFESSORE' AS QUALIFICA FROM professori",
+        "SELECT Cognome AS LastName, Nome AS FirstName, 'studente' AS Status\nFROM Studenti\nUNION ALL\nSELECT Cognome AS LastName, Nome AS FirstName, 'professore' AS Status\nFROM Professori;",
+        "SELECT Cognome AS LastName, Nome AS FirstName, 'studente' AS Status\nFROM Studenti\nUNION\nSELECT Cognome AS LastName, Nome AS FirstName, 'professore' AS Status\nFROM Professori;",
+        "SELECT Cognome AS LastName, Nome AS FirstName, 'professore' AS Status\nFROM Professori\nUNION\nSELECT Cognome AS LastName, Nome AS FirstName, 'studente' AS Status\nFROM Studenti;",
+        "SELECT Cognome AS LastName, Nome AS FirstName, 'professore' AS Status\nFROM Professori\n\nUNION ALL\n\nSELECT Cognome AS LastName, Nome AS FirstName, 'studente' AS Status\nFROM Studenti;"
+      ]
+    },
+    {
+      "title": "db_lab_2-8",
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "verified": true,
+      "source": "excel_exemplary",
+      "request": "List the computer science students who passed Databases 1 (basi di dati 1) but not Graphic Interfaces (interfacce grafiche) in June 2010.",
+      "solutions": [
+        "select matricola\nfrom studenti\ninner join esami on studenti.matricola=esami.studente\n\twhere esami.corso like 'bdd1%'\n\tand esami.voto >= 18\n\tand esami.data >= '2010-06-01'\n\tand esami.data <= '2010-06-30'\nexcept\nselect matricola\n\tfrom studenti\ninner join esami on studenti.matricola=esami.studente\n\twhere esami.corso like 'ig%'\n\tand esami.voto >= 18\n\tand esami.data >= '2010-06-01'\n\tand esami.data <= '2010-06-30';"
+      ]
+    },
+    {
+      "title": "db_lab_2-9",
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "verified": true,
+      "source": "excel_exemplary",
+      "request": "List the computer science students who passed both Databases 1 (basi di dati 1) and Graphic Interfaces (interfacce grafiche) in June 2010.",
+      "solutions": [
+        "select matricola\nfrom studenti\ninner join esami on studenti.matricola=esami.studente\n\twhere esami.corso like 'bdd1%'\n\tand esami.voto >= 18\n\tand esami.data >= '2010-06-01'\n\tand esami.data <= '2010-06-30'\nintersect\n\tselect matricola\n\tfrom studenti\ninner join esami on studenti.matricola=esami.studente\n\twhere esami.corso like 'ig%'\n\tand esami.voto >= 18\n\tand esami.data >= '2010-06-01'\n\tand esami.data <= '2010-06-30';",
+        "SELECT esami.studente\nFROM esami\nWHERE esami.corso = 'bdd1n' AND esami.voto >= 18 AND esami.data BETWEEN '2010-06-01' AND '2010-06-30' \nINTERSECT\nSELECT esami.studente\nFROM esami\nWHERE esami.corso = 'ig' AND esami.voto >= 18 AND esami.data BETWEEN '2010-06-01' AND '2010-06-30'"
+      ]
+    }
+  ]
+}

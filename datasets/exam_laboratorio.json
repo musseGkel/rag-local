@@ -1,0 +1,59 @@
+{
+  "dataset_str": "BEGIN TRANSACTION;\n\ndrop schema if exists \"laboratorio\" cascade;\n\ncreate schema \"laboratorio\";\nset search_path to \"laboratorio\";\n\nCREATE TABLE STUDENTE (\n    Matricola VARCHAR(20) PRIMARY KEY,\n    Nome VARCHAR(255),\n    Cognome VARCHAR(255),\n    Genere CHAR(1),\n    DataN DATE,\n    LuogoN VARCHAR(255),\n    Residenza VARCHAR(255),\n    Telefono VARCHAR(20),\n    CorsodiLaurea VARCHAR(255)\n);\n\nCREATE TABLE DIPENDENTE (\n    MatricolaD VARCHAR(20) PRIMARY KEY,\n    Nome VARCHAR(255),\n    Cognome VARCHAR(255),\n    Ruolo VARCHAR(100),\n    Email VARCHAR(255),\n    Ufficio VARCHAR(100),\n    Telefono VARCHAR(20)\n);\n\nCREATE TABLE DOCENTE (\n    MatricolaD VARCHAR(20) PRIMARY KEY REFERENCES DIPENDENTE(MatricolaD)\n);\n\nCREATE TABLE LABORATORIO (\n    CodLabo VARCHAR(50) PRIMARY KEY,\n    Edificio VARCHAR(100),\n    NumLocale VARCHAR(20),\n    Responsabile VARCHAR(20) REFERENCES DIPENDENTE(MatricolaD),\n    UNIQUE (Edificio, NumLocale),\n    UNIQUE (Responsabile)\n);\n\nCREATE TABLE POSTAZIONE (\n    NumP INTEGER,\n    CodLabo VARCHAR(50) REFERENCES LABORATORIO(CodLabo),\n    PRIMARY KEY (NumP, CodLabo)\n);\n\nCREATE TABLE RISORSA (\n    CodRis VARCHAR(50) PRIMARY KEY,\n    ConAutorizzazione BOOLEAN,\n    NumP INTEGER,\n    CodLabo VARCHAR(50),\n    FOREIGN KEY (NumP, CodLabo) REFERENCES POSTAZIONE(NumP, CodLabo)\n);\n\nCREATE TABLE UTILIZZO (\n    Matricola VARCHAR(20) REFERENCES STUDENTE(Matricola),\n    NumP INTEGER,\n    CodLabo VARCHAR(50),\n    Data DATE,\n    OraI TIME,\n    OraF TIME,\n    PRIMARY KEY (Matricola, NumP, CodLabo, Data, OraI),\n    FOREIGN KEY (NumP, CodLabo) REFERENCES POSTAZIONE(NumP, CodLabo)\n);\n\nCREATE TABLE INSEGNAMENTO (\n    CodIns VARCHAR(50) PRIMARY KEY,\n    Titolo VARCHAR(255),\n    CorsodiLaurea VARCHAR(255),\n    MatricolaD VARCHAR(20) REFERENCES DOCENTE(MatricolaD)\n);\n\nCREATE TABLE OCCUPA (\n    CodIns VARCHAR(50) REFERENCES INSEGNAMENTO(CodIns),\n    CodLabo VARCHAR(50) REFERENCES LABORATORIO(CodLabo),\n    Data DATE,\n    OraIn TIME,\n    OraFine TIME,\n    PRIMARY KEY (CodIns, CodLabo, Data, OraIn)\n);\n\n-- Fila B only: students authorized to use specific resources\nCREATE TABLE AUTORIZZAZIONE (\n    Matricola VARCHAR(20) REFERENCES STUDENTE(Matricola),\n    CodRis VARCHAR(50) REFERENCES RISORSA(CodRis),\n    Autorizzatore VARCHAR(20) REFERENCES DOCENTE(MatricolaD),\n    DataScadenza DATE,\n    Motivazione TEXT,\n    PRIMARY KEY (Matricola, CodRis)\n);\n\n-- No INSERT statements (exam PDF source, no data instances provided)\n\nCOMMIT;",
+  "dbms": "postgresql",
+  "description": "Exam exercises on a university laboratory management domain. Schema covers students, employees, teachers, labs, workstations, resources, teachings and lab bookings.",
+  "domain": "university laboratory",
+  "source": "exam_pdf",
+  "exercises": [
+    {
+      "title": "Exercise 1A",
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "verified": true,
+      "request": "Trovare i docenti degli insegnamenti che occupano laboratori che contengono postazioni con risorse che richiedono autorizzazione.",
+      "solutions": [
+        "SELECT DISTINCT MatricolaD\nFROM INSEGNAMENTO NATURAL JOIN OCCUPA NATURAL JOIN RISORSA\nWHERE ConAutorizzazione = TRUE;"
+      ]
+    },
+    {
+      "title": "Exercise 2A",
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "verified": false,
+      "request": "Per ogni corso di laurea, trovare lo studente di quel corso di laurea con la maggiore durata complessiva di utilizzo di postazioni.",
+      "solutions": [
+        "SELECT S.CorsodiLaurea, S.Matricola\nFROM STUDENTE S NATURAL JOIN UTILIZZO\nGROUP BY S.CorsodiLaurea, S.Matricola\nHAVING SUM(OraF - OraI) >= ALL (\n    SELECT SUM(OraF - OraI)\n    FROM STUDENTE NATURAL JOIN UTILIZZO\n    WHERE CorsodiLaurea = S.CorsodiLaurea\n    GROUP BY Matricola\n);"
+      ]
+    },
+    {
+      "title": "Exercise 1B",
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "verified": true,
+      "request": "Trovare gli studenti e le risorse tali che lo studente \u00e8 stato autorizzato a usare la risorsa da un docente diverso dal docente responsabile del laboratorio in cui si trova la risorsa.",
+      "solutions": [
+        "SELECT Matricola, CodRis\nFROM AUTORIZZAZIONE NATURAL JOIN RISORSA NATURAL JOIN LABORATORIO\nWHERE Autorizzatore <> Responsabile;"
+      ]
+    },
+    {
+      "title": "Exercise 2B",
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "verified": true,
+      "request": "Per ogni laboratorio, trovare la postazione di quel laboratorio con la maggiore durata complessiva di utilizzo da parte degli studenti.",
+      "solutions": [
+        "SELECT U.CodLabo, U.NumP\nFROM UTILIZZO U\nGROUP BY U.CodLabo, U.NumP\nHAVING SUM(U.OraF - U.OraI) >= ALL (\n    SELECT SUM(OraF - OraI)\n    FROM UTILIZZO\n    WHERE CodLabo = U.CodLabo\n    GROUP BY NumP\n);"
+      ]
+    }
+  ],
+  "search_path": "laboratorio",
+  "title": "Exam: Laboratori e Postazioni"
+}

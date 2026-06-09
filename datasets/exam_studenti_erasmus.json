@@ -1,0 +1,59 @@
+{
+  "dataset_str": "BEGIN TRANSACTION;\n\ndrop schema if exists \"studenti_erasmus\" cascade;\n\ncreate schema \"studenti_erasmus\";\nset search_path to \"studenti_erasmus\";\n\nCREATE TABLE STUDENTE (\n    matricola VARCHAR(20) PRIMARY KEY,\n    nome VARCHAR(255),\n    cognome VARCHAR(255),\n    email VARCHAR(255),\n    cds VARCHAR(255),\n    anno INTEGER,\n    coorte INTEGER\n);\n\nCREATE TABLE UNIVERSITA (\n    codiceE VARCHAR(50) PRIMARY KEY,\n    sigla VARCHAR(50) UNIQUE,\n    nome VARCHAR(255),\n    stato VARCHAR(100),\n    citta VARCHAR(255),\n    email_referente VARCHAR(255) UNIQUE\n);\n\nCREATE TABLE DOMANDA (\n    matricola VARCHAR(20) REFERENCES STUDENTE(matricola),\n    anno_acc VARCHAR(10),\n    data DATE,\n    stato VARCHAR(100),\n    note TEXT,\n    PRIMARY KEY (matricola, anno_acc)\n);\n\nCREATE TABLE PREFERENZA (\n    matricola VARCHAR(20),\n    anno_acc VARCHAR(10),\n    nPref INTEGER,\n    codiceE VARCHAR(50) REFERENCES UNIVERSITA(codiceE),\n    PRIMARY KEY (matricola, anno_acc, nPref),\n    FOREIGN KEY (matricola, anno_acc) REFERENCES DOMANDA(matricola, anno_acc)\n);\n\nCREATE TABLE ASSEGNAZIONE (\n    assegnazioneId VARCHAR(50) PRIMARY KEY,\n    matricola VARCHAR(20),\n    anno_acc VARCHAR(10),\n    codiceE VARCHAR(50),\n    data_esito DATE,\n    stato_mobilita VARCHAR(100),\n    data_inizio_prevista DATE,\n    data_fine_prevista DATE,\n    mesi_previsti INTEGER,\n    borsa_euro DECIMAL(10,2),\n    FOREIGN KEY (matricola, anno_acc, codiceE) REFERENCES PREFERENZA(matricola, anno_acc, codiceE)\n);\n\nCREATE TABLE LEARNING_AGREEMENT (\n    assegnazioneId VARCHAR(50) REFERENCES ASSEGNAZIONE(assegnazioneId),\n    versione INTEGER,\n    riga_num INTEGER,\n    corso_estero_cod VARCHAR(50),\n    corso_estero_nome VARCHAR(255),\n    ects_estero DECIMAL(5,1),\n    semestre_estero VARCHAR(20),\n    PRIMARY KEY (assegnazioneId, versione, riga_num)\n);\n\nCREATE TABLE RICONOSCIMENTO (\n    assegnazione_id VARCHAR(50),\n    versione INTEGER,\n    riga_num INTEGER,\n    corso_casa_cod VARCHAR(50),\n    corso_casa_nome VARCHAR(255),\n    cfu_casa DECIMAL(5,1),\n    data_superamento_estero DATE,\n    voto_estero DECIMAL(5,2),\n    scala_estero VARCHAR(50),\n    voto_convertito_30 DECIMAL(4,1),\n    lode BOOLEAN,\n    note TEXT,\n    PRIMARY KEY (assegnazione_id, versione, riga_num),\n    FOREIGN KEY (assegnazione_id, versione, riga_num)\n        REFERENCES LEARNING_AGREEMENT(assegnazioneId, versione, riga_num)\n);\n\n-- No INSERT statements (exam PDF source, no data instances provided)\n\nCOMMIT;",
+  "dbms": "postgresql",
+  "description": "Exam exercises on an Erasmus student mobility domain. Schema covers students, universities, applications, preferences, assignments, learning agreements and course recognitions.",
+  "domain": "Erasmus student mobility",
+  "source": "exam_pdf",
+  "exercises": [
+    {
+      "title": "Exercise 1",
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "verified": true,
+      "request": "Determinare gli studenti del corso di laurea in informatica che hanno presentato domanda nell'anno accademico 2024/25 ma non sono stati assegnati.",
+      "solutions": [
+        "SELECT DISTINCT matricola\nFROM DOMANDA NATURAL JOIN STUDENTE\nWHERE anno_acc = '2024/25'\nAND cds = 'Informatica'\nAND matricola NOT IN (\n    SELECT DISTINCT matricola\n    FROM ASSEGNAZIONE\n    WHERE anno_acc = '2024/25'\n);"
+      ]
+    },
+    {
+      "title": "Exercise 2",
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "verified": true,
+      "request": "Determinare sigla e nome dell'universit\u00e0 per cui il numero totale dei crediti riconosciuti (\u00e8 il totale dei cfu acquisiti nei riconoscimenti) \u00e8 massimo.",
+      "solutions": [
+        "WITH TMP AS (\n    SELECT sigla, nome, SUM(cfu_casa) AS TCR\n    FROM UNIVERSITA\n    NATURAL JOIN ASSEGNAZIONE\n    NATURAL JOIN LEARNING_AGREEMENT\n    NATURAL JOIN RICONOSCIMENTO\n    GROUP BY sigla, nome\n)\nSELECT sigla, nome\nFROM TMP\nWHERE TCR = (SELECT MAX(TCR) FROM TMP);"
+      ]
+    },
+    {
+      "title": "Exercise 3",
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "verified": true,
+      "request": "Determinare sigla e nome delle universit\u00e0 che non sono state indicate come prima scelta (nPref=1) in alcuna domanda nell'anno accademico 2024/25.",
+      "solutions": [
+        "SELECT DISTINCT nome, sigla\nFROM UNIVERSITA\nWHERE codiceE NOT IN (\n    SELECT DISTINCT codiceE\n    FROM PREFERENZA\n    WHERE nPref = 1\n    AND anno_acc = '2024/25'\n);"
+      ]
+    },
+    {
+      "title": "Exercise 4",
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "verified": false,
+      "request": "Determinare sigla e nome dell'universit\u00e0 per cui la media dei voti convertiti nei riconoscimenti \u00e8 massima (ignorare le lodi).",
+      "solutions": [
+        "WITH TMP AS (\n    SELECT sigla, nome, AVG(voto_convertito_30) AS MVC\n    FROM UNIVERSITA\n    NATURAL JOIN ASSEGNAZIONE\n    NATURAL JOIN LEARNING_AGREEMENT\n    NATURAL JOIN RICONOSCIMENTO\n    GROUP BY sigla, nome\n)\nSELECT sigla, nome\nFROM TMP\nWHERE MVC = (SELECT MAX(MVC) FROM TMP);"
+      ]
+    }
+  ],
+  "search_path": "studenti_erasmus",
+  "title": "Exam: Studenti Erasmus"
+}

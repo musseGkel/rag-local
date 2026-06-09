@@ -1,0 +1,166 @@
+{
+  "dataset_str": "BEGIN TRANSACTION;\n\ndrop schema if exists \"miedema\" cascade;\n\ncreate schema \"miedema\";\nset search_path to \"miedema\";\n\nCREATE TABLE customer(\n    cID DECIMAL(5,0) PRIMARY KEY,\n    cName VARCHAR(255) NOT NULL,\n    street VARCHAR(255) NOT NULL,\n    city VARCHAR(255) NOT NULL\n);\n\nCREATE TABLE store(\n    sID DECIMAL(5,0) PRIMARY KEY,\n    sName VARCHAR(255) NOT NULL,\n    street VARCHAR(255) NOT NULL,\n    city VARCHAR(255) NOT NULL\n);\n\nCREATE TABLE product(\n    pID DECIMAL(5,0) PRIMARY KEY,\n    pName VARCHAR(255) NOT NULL,\n    suffix VARCHAR(255)\n);\n\nCREATE TABLE shoppinglist(\n    cID DECIMAL(5,0) REFERENCES customer(cID),\n    pID DECIMAL(5,0) REFERENCES product(pID),\n    quantity DECIMAL(10,0) NOT NULL,\n    date DATE NOT NULL,\n    PRIMARY KEY(cID, pID)\n);\n\nCREATE TABLE transaction(\n    tID DECIMAL(5,0),\n    cID DECIMAL(5,0) NOT NULL REFERENCES customer(cID),\n    sID DECIMAL(5,0) NOT NULL REFERENCES store(sID),\n    pID DECIMAL(5,0) REFERENCES product(pID),\n    date DATE NOT NULL,\n    quantity DECIMAL(10,0) NOT NULL,\n    price DECIMAL(10,2) NOT NULL,\n    PRIMARY KEY(tID, pID)\n);\n\nCREATE TABLE inventory(\n    sID DECIMAL(5,0) REFERENCES store(sID),\n    pID DECIMAL(5,0) REFERENCES product(pID),\n    date DATE NOT NULL,\n    quantity DECIMAL(10) NOT NULL,\n    unit_price DECIMAL(10, 2) NOT NULL,\n    PRIMARY KEY(sID, pID, date)\n);\n\nINSERT INTO customer VALUES\n(0, 'Noah', 'Koestraat', 'Ultrecht'),\n(1, 'Sem', 'Rozemarijnstraat', 'Breda'),\n(2, 'Lucas', 'Oude Leliestraat', 'Amsterdam'),\n(3, 'Daan',  'Kalverstraat', 'Amsterdam');\n\nINSERT INTO store VALUES\n(0, 'Coop', 'Kalverstraat', 'Amsterdam'),\n(1, 'Lidl', 'Hoogstraat', 'Utrecht'),\n(2, 'Lidl', 'Molenstraat', 'Eindhoven'),\n(3, 'Hoogvliet', 'Rozemarijnstraat', 'Breda'),\n(4, 'Sligro', 'Stationsplein', 'Breda');\n\n\nINSERT INTO product VALUES\n(1, 'Milk', '\"\"'),\n(2, 'Mushrooms', '\"\"'),\n(3, 'Apples', '\"\"'),\n(4, 'Tea', '\"\"'),\n(5, 'Banana', '\"\"');\n\nINSERT INTO transaction VALUES\n(0, 0, 4, 3, '2020-05-12', 5, .4),\n(1, 0, 4, 1, '2020-05-13', 2, .65),\n(2, 2, 0, 4, '2020-05-13', 2, 1.3),\n(3, 3, 0, 1, '2020-05-15', 1, .67);\n\nINSERT INTO shoppinglist VALUES\n(1, 2, 1, '2020-05-13'),\n(1, 3, 6, '2020-05-13'),\n(3, 1, 2, '2020-05-15');\n\nINSERT INTO inventory VALUES\n(0, 1, '2020-05-15', 55, .55),\n(0, 2, '2020-05-15', 32, 2.3),\n(1, 4, '2020-05-15', 12, 1.8),\n(1, 1, '2020-05-15', 46, .6);\n\n\n\nCOMMIT;",
+  "dbms": "postgresql",
+  "description": "Correct (EXEMPLARY) LLM-generated SQL solutions for Miedema exercises, extracted from the Livani misconceptions dataset. Each exercise has multiple deduplicated correct solutions.",
+  "domain": "retail / shopping",
+  "source": "excel_exemplary",
+  "search_path": "miedema",
+  "title": "Excel EXEMPLARY: Miedema Exercises",
+  "exercises": [
+    {
+      "title": "Miedema_4-2",
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "verified": true,
+      "source": "excel_exemplary",
+      "request": "List all IDs&names of customers living in Eindhoven.",
+      "solutions": [
+        "SELECT cID, cName\nFROM customer\nWHERE city = 'Eindhoven';",
+        "SELECT cID, cName\nFROM miedema.customer\nWHERE city = 'Eindhoven';",
+        "SELECT cId, cName \nFROM Customer \nWHERE city = 'Eindhoven';",
+        "SELECT customer.cid, customer.cname\nFROM miedema.customer\nWHERE customer.city = 'Eindhoven'",
+        "SELECT CID,CNAME\nFROM CUSTOMER\nWHERE CITY='Eindhoven'",
+        "select cid, cname\nfrom customer\nwhere city = 'Eindhoven'",
+        "SELECT customer.cid, customer.cname\nFROM miedema.customer\nWHERE customer.city='Eindhoven'",
+        "SELECT cid, cname\nFROM customer\nWHERE city = 'Eindhoven'",
+        "select cid, cname\n\nfrom customer\n\nwhere city='Eindhoven';",
+        "SELECT cId AS Identificatore, cName AS Nome\nFROM Customer\nWHERE city = 'Eindhoven';",
+        "SELECT cID, cName\nFROM customer\nWHERE city='Eindhoven';",
+        "SELECT CID,CNAME from customer WHERE city='Eindhoven';",
+        "select cid, cName\nfrom miedema.customer\nwhere customer.city = 'Eindhoven'",
+        "select cID,cName from customer \nwhere city='Eindhoven';",
+        "SELECT cID, cName FROM Customer\nWHERE city = 'Eindhoven'",
+        "SELECT cid, cname FROM customer\nWHERE city='Eindhoven'",
+        "select cID, cName\nfrom customer\nwhere city = 'Eindhoven'",
+        "SELECT cID, cName \nFROM Customer\nWHERE city = 'Eindhoven' ;",
+        "SELECT cID, cName\nFROM Customer\nWHERE city = 'Eindhoven';",
+        "SELECT cID, cName FROM customer WHERE city = 'Eindhoven'",
+        "SELECT cID , cName \nFROM Customer \nWHERE city='Eindhoven';"
+      ]
+    },
+    {
+      "title": "Miedema_4-3",
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "verified": true,
+      "source": "excel_exemplary",
+      "request": "List all pairs of customer IDs who live on a street with the same name but in a different city.",
+      "solutions": [
+        "SELECT a.cID AS Customer1_ID, b.cID AS Customer2_ID\nFROM miedema.customer AS a\nJOIN miedema.customer AS b ON a.street = b.street AND a.city <> b.city\nWHERE a.cID < b.cID;",
+        "SELECT c1.cID AS Customer1, c2.cID AS Customer2\nFROM customer c1\nJOIN customer c2\nON c1.street = c2.street\nAND c1.city <> c2.city\nAND c1.cID < c2.cID;"
+      ]
+    },
+    {
+      "title": "Miedema_4-4",
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "verified": true,
+      "source": "excel_exemplary",
+      "request": "List all customer IDs, dates and quantities of transactions containing products named Apples.",
+      "solutions": [
+        "SELECT t.cID, t.date, t.quantity\nFROM transaction t\nJOIN product p ON t.pID = p.pID\nWHERE p.pName = 'Apples';",
+        "SELECT \n    t.cID, \n    t.date, \n    t.quantity\nFROM \n    miedema.transaction t\nJOIN \n    miedema.product p ON t.pID = p.pID\nWHERE \n    p.pName = 'Apples';",
+        "SELECT cID, date, quantity \nFROM Transaction \nINNER JOIN Product ON Transaction.pID = Product.pID AND pName = 'Apples';",
+        "SELECT transaction.cID, transaction.date, transaction.quantity\nFROM miedema.transaction\nLEFT JOIN miedema.product on product.pID = transaction.pID\nWHERE product.pName = 'Apples';",
+        "SELECT transaction.cid, transaction.date, transaction.quantity\nFROM miedema.transaction, miedema.product\nWHERE product.pName='Apples' AND product.pid = transaction.pid",
+        "SELECT t.cID AS customer_id, t.date AS transazione_data, t.quantity\nFROM transaction AS t\nJOIN product p ON t.pID = p.pID\nWHERE p.pName = 'Apples';",
+        "SELECT t.cID AS CustomerID, t.date AS TransactionDate, t.quantity AS Quantity FROM \"transaction\" t JOIN product p ON t.pID = p.pID WHERE p.pName = 'Apples';",
+        "select cid, transaction.date, transaction.quantity\nfrom miedema.transaction natural join miedema.product\nwhere product.pName = 'Apples'",
+        "select cID,date,quantity \nfrom transaction t join product p on t.pID = p.pID\nwhere p.pName='Apples';",
+        "SELECT cID, date, quantity FROM Transaction  NATURAL JOIN Product\nWHERE pName = 'Apples'",
+        "SELECT cid, date, quantity FROM transaction \nJOIN product ON product.pid=transaction.pid \nAND pname='Apples'\nAlternativamente al posto di AND si potrebbe usare WHERE come di seguito\nSELECT cid, date, quantity FROM transaction \nJOIN product ON product.pid=transaction.pid \nWHERE pname='Apples'"
+      ]
+    },
+    {
+      "title": "Miedema_4-5",
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "verified": true,
+      "source": "excel_exemplary",
+      "request": "Find the names of all inventory items that have a higher unit price than Bananas",
+      "solutions": [
+        "select distinct(P.pName)\nfrom Inventory I natural join Product P \nwhere I.unit_price > ALL (select I.unit_price from Inventory I natural join Product P where P.pName = 'Banana' )"
+      ]
+    },
+    {
+      "title": "Miedema_4-6",
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "verified": true,
+      "source": "excel_exemplary",
+      "request": "Return a list of the number of stores per city.",
+      "solutions": [
+        "SELECT city, COUNT(sID) AS number_of_stores\nFROM miedema.store\nGROUP BY city;",
+        "SELECT city, COUNT(city)\nFROM store\nGROUP BY city;",
+        "SELECT city, COUNT(sID) FROM Store GROUP BY city;",
+        "SELECT store.city, COUNT(*) AS number_of_store\nFROM miedema.store\nGROUP BY store.city;",
+        "SELECT Store.city, COUNT(Store.sName)\nFROM miedema.Store\nGROUP BY Store.city",
+        "select city, count(*)\nfrom store\ngroup by city",
+        "SELECT COUNT(sname) AS \"store quantity\", city\nFROM store\nGROUP BY city",
+        "SELECT city, COUNT(*) AS store_count\nFROM store\nGROUP BY city;",
+        "SELECT city, COUNT(*) AS StoresForCity\nFROM Store\nGROUP BY city;",
+        "SELECT city, COUNT(*) AS StoreCount FROM store GROUP BY city;",
+        "select city,count(*)\nfrom miedema.store\ngroup by city",
+        "select city,count(*) from store\ngroup by city;",
+        "SELECT city, COUnt(city) FROM Store \nGROUP BY city",
+        "SELECT city, COUNT(*) AS numstore_city FROM store\nGROUP BY city",
+        "SELECT city, COUNT(sID) AS number_of_stores\nFROM store\nGROUP BY city;",
+        "SELECT city, COUNT(*) AS number_of_stores\nFROM store\nGROUP BY city;"
+      ]
+    },
+    {
+      "title": "Miedema_4-7",
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "verified": true,
+      "source": "excel_exemplary",
+      "request": "Return the stores table ordered alphabetically on city.",
+      "solutions": [
+        "SELECT * FROM store\nORDER BY city;",
+        "SELECT *\nFROM miedema.store\nORDER BY city ASC;",
+        "select *\nfrom store S \norder by S.city ASC",
+        "SELECT * FROM Store ORDER BY city;",
+        "SELECT *\nFROM miedema.store\nORDER BY store.city ASC;",
+        "SELECT *\nFROM Store\nORDER BY city",
+        "SELECT *\nFROM miedema.Store\nORDER BY Store.city ASC",
+        "SELECT *\nFROM store\nORDER BY city ASC",
+        "select *\nfrom store\norder by city;",
+        "SELECT *\nFROM store\nORDER BY city ASC;",
+        "select *\nfrom miedema.store\norder by city asc",
+        "select * from store order by city asc;",
+        "Select *\nfrom store\norder by city ASC"
+      ]
+    },
+    {
+      "title": "Miedema_4-9",
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "verified": true,
+      "source": "excel_exemplary",
+      "request": "A store-chain consists of at least two stores with the same name but different IDs. Find the names of the store-chains that on average sell product in quantities of more than 4.",
+      "solutions": [
+        "SELECT s.sName\nFROM store s\nJOIN transaction t ON s.sID = t.sID\nGROUP BY s.sName\nHAVING COUNT(DISTINCT s.sID) >= 2 AND AVG(t.quantity) > 4;",
+        "SELECT sName FROM Store NATURAL JOIN Transaction\nWHERE sName IN (\n        SELECT sName FROM Store\n        GROUP BY sName\n        HAVING COUNT(*) > 1\n)\nGROUP BY sName \nHAVING AVG(quantity) > 4",
+        "SELECT DISTINCT X.sname FROM store X, store Y\nWHERE X.sname=Y.sname AND X.sid!=Y.sid\nINTERSECT\nSELECT sname FROM store X\nWHERE (SELECT AVG(quantity) FROM transaction \n           WHERE sid=X.sid\n          )>4",
+        "WITH StoreChainAvgQuantity AS (\n    SELECT\n        s.sName,\n        AVG(t.quantity) AS avg_quantity\n    FROM\n        store s\n    JOIN\n        transaction t ON s.sID = t.sID\n    GROUP BY\n        s.sName\n    HAVING\n        COUNT(DISTINCT s.sID) > 1\n)\nSELECT\n    sName\nFROM\n    StoreChainAvgQuantity\nWHERE\n    avg_quantity > 4;",
+        "WITH store_chains AS (\n    SELECT\n        sName,\n        COUNT(sID) AS store_count\n    FROM\n        store\n    GROUP BY\n        sName\n    HAVING\n        COUNT(sID) > 1\n),\naverage_sales AS (\n    SELECT\n        s.sName,\n        AVG(t.quantity) AS avg_quantity\n    FROM\n        transaction t\n    JOIN\n        store s ON t.sID = s.sID\n    GROUP BY\n        s.sName\n)\nSELECT\n    sc.sName\nFROM\n    store_chains sc\nJOIN\n    average_sales a ON sc.sName = a.sName\nWHERE\n    a.avg_quantity > 4;",
+        "SELECT \n    s.sName AS store_chain_name\nFROM \n    store s\nJOIN \n    transaction t ON s.sID = t.sID\nGROUP BY \n    s.sName\nHAVING \n    COUNT(DISTINCT s.sID) > 1 AND AVG(t.quantity) > 4;",
+        "SELECT s.sName\nFROM store s\nJOIN transaction t ON s.sID = t.sID\nGROUP BY s.sName\nHAVING COUNT(DISTINCT s.sID) > 1 AND AVG(t.quantity) > 4;"
+      ]
+    }
+  ]
+}

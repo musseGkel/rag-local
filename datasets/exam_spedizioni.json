@@ -1,0 +1,51 @@
+{
+  "dataset_str": "BEGIN TRANSACTION;\n\ndrop schema if exists \"spedizioni\" cascade;\n\ncreate schema \"spedizioni\";\nset search_path to \"spedizioni\";\n\nCREATE TABLE SOGGETTO (\n    CodiceSogg VARCHAR(50) PRIMARY KEY,\n    Nome VARCHAR(255),\n    Indirizzo VARCHAR(255)\n);\n\nCREATE TABLE CATEGORIA (\n    CodiceCat VARCHAR(50) PRIMARY KEY,\n    Descrizione VARCHAR(50),\n    Prezzo DECIMAL(10,2)\n);\n\nCREATE TABLE SPEDIZIONE (\n    CodiceSp VARCHAR(50) PRIMARY KEY,\n    Mittente VARCHAR(50) REFERENCES SOGGETTO(CodiceSogg),\n    Destinatario VARCHAR(50) REFERENCES SOGGETTO(CodiceSogg),\n    IndirizzoSpedizione VARCHAR(255),\n    CodiceCat VARCHAR(50) REFERENCES CATEGORIA(CodiceCat),\n    Stato VARCHAR(50)\n);\n\nCREATE TABLE PACCO (\n    CodiceSp VARCHAR(50) REFERENCES SPEDIZIONE(CodiceSp),\n    NumPacco INTEGER,\n    Peso DECIMAL(10,3),\n    PRIMARY KEY (CodiceSp, NumPacco)\n);\n\nCREATE TABLE LUOGO (\n    Coordinate VARCHAR(100) PRIMARY KEY,\n    Descrizione VARCHAR(255)\n);\n\nCREATE TABLE POSIZIONE (\n    CodiceSp VARCHAR(50) REFERENCES SPEDIZIONE(CodiceSp),\n    Coordinate VARCHAR(100) REFERENCES LUOGO(Coordinate),\n    DataOra TIMESTAMP,\n    PRIMARY KEY (CodiceSp, Coordinate)\n);\n\n-- No INSERT statements (exam PDF source, no data instances provided)\n-- Note: Stato values are: consegnata, rifiutata, in viaggio\n-- Note: Categoria Descrizione values are: standard, fast, express\n-- Note: IndirizzoSpedizione is optional (NULL means deliver to Destinatario address)\n\nCOMMIT;",
+  "dbms": "postgresql",
+  "description": "Exam exercises on a parcel shipping domain. Schema covers senders/recipients, shipments, packages, locations and tracking.",
+  "domain": "parcel shipping",
+  "source": "exam_pdf",
+  "exercises": [
+    {
+      "title": "Exercise 1A",
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "verified": false,
+      "request": "Determinare i soggetti che non hanno mai rifiutato spedizioni (cio\u00e8 non sono mai stati destinatari di spedizioni con stato 'rifiutata').",
+      "solutions": []
+    },
+    {
+      "title": "Exercise 2A",
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "verified": false,
+      "request": "Determinare la spedizione con stato 'in viaggio' che contiene il maggior numero di pacchi.",
+      "solutions": []
+    },
+    {
+      "title": "Exercise 1B",
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "verified": false,
+      "request": "Determinare i nomi dei soggetti che non hanno mai effettuato (cio\u00e8 non sono mai stati mittenti di) spedizioni in categoria 'express'.",
+      "solutions": []
+    },
+    {
+      "title": "Exercise 2B",
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "verified": false,
+      "request": "Determinare lo stato della spedizione con peso complessivo massimo.",
+      "solutions": []
+    }
+  ],
+  "search_path": "spedizioni",
+  "title": "Exam: Spedizioni"
+}

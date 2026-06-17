@@ -27,6 +27,7 @@ def generate_exercise(
     """
 
     violations = []
+    last_sql = ""  # remember the previous attempt's SQL for feedback
 
     for attempt in range(1, max_retries + 1):
         print(f"Attempt {attempt}/{max_retries}...")
@@ -34,41 +35,24 @@ def generate_exercise(
         # Rebuild the prompt fresh each attempt
         prompt = build_generation_lens_prompt(error, difficulty, language, dataset_name)
 
-        # If previous attempt had violations, add them at the top
+        # If previous attempt had violations, feed back its own SQL + the rules.
         if attempt > 1 and violations:
             violation_text = "\n".join(f"- {v}" for v in violations)
             prompt.generation_query = (
-                f"The previous attempt failed these constraints:\n"
-                f"{violation_text}\n\n"
-                f"Fix ALL of these violations in your new attempt.\n"
-                f"Pay close attention to each rule before writing the SQL.\n\n"
+                f"Your previous SQL was:\n{last_sql}\n\n"
+                f"It failed these constraints:\n{violation_text}\n\n"
+                f"Rewrite the SQL so it satisfies every constraint. "
+                f"Keep the same tables; only adjust the query to fix the violations.\n\n"
                 + prompt.generation_query
             )
+            # Vary retrieval on retries so we don't pull the same neighbors every time.
+            prompt.retrieval_query = f"{prompt.retrieval_query} {last_sql}"
 
         # ── DEBUG: show retrieval and full context ──────────────────────
         from retriever_reranker_server import retrieve_for_generation
         from generator_phi3_server import build_context
-        from generation.validator import validate_sql
-
-        def _extract_sql(doc):
-            body = doc.page_content or ""
-            if "[SQL SOLUTION]" not in body:
-                return ""
-            return body.split("[SQL SOLUTION]", 1)[1].strip()
-
-        def _keep_clean_examples(docs, error, difficulty, language):
-            # Keep only examples that satisfy the SAME constraints we enforce.
-            # Stays correct for every error type because it reuses validate_sql.
-            clean = []
-            for d in docs:
-                sql = _extract_sql(d)
-                if sql and not validate_sql(sql, error, difficulty, language):
-                    clean.append(d)
-            return clean
 
         docs = retrieve_for_generation(prompt.retrieval_query)
-        clean = _keep_clean_examples(docs, error, difficulty, language)
-        docs = clean or docs  # fall back to raw docs if filtering empties the list
 
         print(f"\n  [DEBUG] Retrieval query: {prompt.retrieval_query}")
         print(f"  [DEBUG] Retrieved {len(docs)} doc(s):")
@@ -117,6 +101,7 @@ def generate_exercise(
 
         # Validate the generated SQL
         violations = validate_sql(sql, error, difficulty, language)
+        last_sql = sql  # store for the next attempt's feedback
 
         if not violations:
             print(f"  Passed all constraints on attempt {attempt}.")
@@ -154,33 +139,6 @@ def generate_exercise(
     }
 
 
-# if __name__ == "__main__":
-#     error = SqlErrors.AMBIGUOUS_COLUMN
-#     difficulty = DifficultyLevel.EASY
-
-#     print(f"Generating exercise for: {error.name} | {difficulty.name}\n")
-
-#     docs = retrieve_for_generation(
-#         f"SQL error: {error.name} difficulty: {difficulty.name}"
-#     )
-#     print(f"RAG retrieved {len(docs)} doc(s)")
-
-#     for d in docs:
-#         print(" -", d.metadata.get("name", d.metadata.get("resource_id", "unknown")))
-
-#     result = generate_exercise(
-#         error=error,
-#         difficulty=difficulty,
-#     )
-
-#     print("REQUEST:")
-#     print(result["request"])
-#     print("\nSQL SOLUTION:")
-#     print(result["sql"])
-
-#     if not result["request"] or not result["sql"]:
-#         print("\nWARNING: Could not parse output. Raw output was:")
-#         print(result["raw"])
 if __name__ == "__main__":
     error = SqlErrors.MISSING_TABLE_REFERENCE
     difficulty = DifficultyLevel.EASY

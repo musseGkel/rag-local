@@ -11,6 +11,7 @@ from sqlexercise.difficulty_level import DifficultyLevel
 from generation.prompts import build_generation_lens_prompt
 from generator_phi3_server import rag_answer
 from generation.validator import validate_sql
+from generation.prompts import build_generation_lens_prompt, build_rewrite_lens_prompt
 
 
 def generate_exercise(
@@ -33,7 +34,7 @@ def generate_exercise(
         # Rebuild the prompt fresh each attempt
         prompt = build_generation_lens_prompt(error, difficulty, language, dataset_name)
 
-        # If previous attempt had violations, add them at the top as a focused instruction
+        # If previous attempt had violations, add them at the top
         if attempt > 1 and violations:
             violation_text = "\n".join(f"- {v}" for v in violations)
             prompt.generation_query = (
@@ -43,6 +44,54 @@ def generate_exercise(
                 f"Pay close attention to each rule before writing the SQL.\n\n"
                 + prompt.generation_query
             )
+
+        # ── DEBUG: show retrieval and full context ──────────────────────
+        from retriever_reranker_server import retrieve_for_generation
+        from generator_phi3_server import build_context
+        from generation.validator import validate_sql
+
+        def _extract_sql(doc):
+            body = doc.page_content or ""
+            if "[SQL SOLUTION]" not in body:
+                return ""
+            return body.split("[SQL SOLUTION]", 1)[1].strip()
+
+        def _keep_clean_examples(docs, error, difficulty, language):
+            # Keep only examples that satisfy the SAME constraints we enforce.
+            # Stays correct for every error type because it reuses validate_sql.
+            clean = []
+            for d in docs:
+                sql = _extract_sql(d)
+                if sql and not validate_sql(sql, error, difficulty, language):
+                    clean.append(d)
+            return clean
+
+        docs = retrieve_for_generation(prompt.retrieval_query)
+        clean = _keep_clean_examples(docs, error, difficulty, language)
+        docs = clean or docs  # fall back to raw docs if filtering empties the list
+
+        print(f"\n  [DEBUG] Retrieval query: {prompt.retrieval_query}")
+        print(f"  [DEBUG] Retrieved {len(docs)} doc(s):")
+        for d in docs:
+            name = (
+                d.metadata.get("name")
+                or d.metadata.get("resource_id")
+                or d.metadata.get("title")
+                or "unknown"
+            )
+            dtype = d.metadata.get("doc_type", "?")
+            print(f"    - [{dtype}] {name}")
+
+        print(f"\n  [DEBUG] RAG context injected into prompt:")
+        print("  " + "-" * 50)
+        print(build_context(docs))
+        print("  " + "-" * 50)
+
+        print(f"\n  [DEBUG] Full generation prompt:")
+        print("  " + "=" * 50)
+        print(prompt.generation_query)
+        print("  " + "=" * 50 + "\n")
+        # ── END DEBUG ───────────────────────────────────────────────────
 
         raw_output = rag_answer(prompt)
 
@@ -71,6 +120,18 @@ def generate_exercise(
 
         if not violations:
             print(f"  Passed all constraints on attempt {attempt}.")
+            # Rewrite the request to accurately match the SQL
+            print(f"  Rewriting request to match SQL...")
+            rewrite_prompt = build_rewrite_lens_prompt(request, sql, language)
+            rewrite_output = rag_answer(rewrite_prompt)
+
+            if "<request>" in rewrite_output and "</request>" in rewrite_output:
+                rewritten_request = (
+                    rewrite_output.split("<request>")[1].split("</request>")[0].strip()
+                )
+                print(f"  Original request: {request}")
+                print(f"  Rewritten request: {rewritten_request}")
+                request = rewritten_request
             return {
                 "request": request,
                 "sql": sql,

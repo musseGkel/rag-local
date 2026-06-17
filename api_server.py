@@ -5,15 +5,9 @@ import os
 # import your generators
 from generator_phi3_server_v2 import rag_answer as phi3_answer
 from generator_deepseek_v2 import rag_answer as deepseek_answer
-from fastapi import Header, HTTPException
-
-API_KEY = "j23m2n4o5p6q7r8s9t0"
-
-
-def verify_key(x_api_key: str = Header(None)):
-    if x_api_key != API_KEY:
-        raise HTTPException(status_code=401, detail="Unauthorized")
-
+from fastapi import Header
+from auth import verify_key
+from exercise_router import router as exercise_router
 
 # import prompts
 from lens_prompts_v2 import (
@@ -27,7 +21,7 @@ from lens_prompts_v2 import (
 )
 
 app = FastAPI(title="Lens API")
-
+app.include_router(exercise_router)
 
 # =========================
 # Request Schema

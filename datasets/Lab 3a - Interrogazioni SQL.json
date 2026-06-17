@@ -1,0 +1,208 @@
+{
+  "dataset_str": "begin;\n\ndrop schema if exists \"unicorsi\" cascade;\ncreate schema \"unicorsi\";\nset search_path to \"unicorsi\";\nset datestyle to \"MDY\";\n\nCREATE TABLE Professori(\nId decimal(5,0) PRIMARY KEY,\nCognome varchar(30) NOT NULL,\nNome varchar(30) NOT NULL,\nStipendio decimal(8,2) NOT NULL DEFAULT 15000 CHECK (Stipendio >=0)\n);\n\nINSERT INTO Professori VALUES\n(1, 'Aguzzoli', 'Davide', 120000),\n(00002, 'Alberti', 'Maria', 16500),\n(00003, 'Bettini', 'Claudio', 18000),\n(00004, 'Borghese', 'Alberto', 12387),\n(00005, 'Cerri', 'Stefano Alberto', 30000),\n(00006, 'Campadelli', 'Laura', 13000),\n(00007, 'Ferrari', 'Mauro', 25000),\n(00008, 'De Falco', 'Stefano', 22000),\n(00009, 'Haus', 'Goffredo', 15000),\n(00010, 'Valle', 'Giorgio', 19760),\n(00011, 'Morpurgo', 'Anna', 18734),\n(00012, 'Aguzzoli', 'Stefano', 13700),\n(00013, 'Angeleri', 'Emanuele', 14000),\n(00014, 'Apolloni', 'Bruno', 17834),\n(00015, 'Bellettini', 'Carlo', 12000),\n(00016, 'Bertero', 'Gianni', 18000),\n(00017, 'Ribaudo', 'Carlo', 19500),\n(00018, 'Lamberti', 'Stefano', default),\n(00019, 'Galvagna', 'Gabriele', 17600),\n(00020, 'Levrero', 'Michele', 12000),\n(00021, 'Martini', 'Guido', 19800),\n(00022, 'Rondinelli', 'Maria', 13500),\n(00023, 'Rondinelli', 'Gianluigi', 13500),\n(00024, 'Rondinelli', 'Patrizio', 13500),\n(00025, 'Rosa', 'Aldo', 19200),\n(00026, 'Rondanino', 'Carmela', 19000),\n(00027, 'Cangini', 'Palmiro', 11200),\n(00028, 'Rondanino', 'Gianna', 19000),\n(00029, 'Vincenzini', 'Palmiro', 11200),\n(00030, 'Devoto', 'Gianni', 13500),\n(00031, 'Farazza', 'Valentina', 18000),\n(00032, 'Serra', 'Pietro', 22387),\n(00033, 'Fabrizi', 'Maura', 30000),\n(00034, 'Gavizzi', 'Stefania', 13000),\n(00035, 'Nizzi', 'Marco', 25000),\n(00036, 'Farano', 'Anna', 23000),\n(00037, 'Merlo', 'Anita', 20000);\n\n\n-----------------------------------------------------------------------------------------\nCREATE TABLE CorsiDiLaurea(\nid decimal(3,0) PRIMARY KEY,\nFacolta varchar(50) NOT NULL,\nDenominazione varchar(50) NOT NULL,\nAttivazione char(9) NOT NULL,\nUNIQUE(Facolta, Denominazione)\n);\n\nINSERT INTO CorsiDiLaurea  VALUES\n(1, 'SS.MM.FF.NN', 'Matematica', '1980/1981'),\n(2, 'SS.MM.FF.NN', 'Chimica', '1990/1991'),\n(3, 'SS.MM.FF.NN', 'Scienze Biologiche', '2009/2010'),\n(4, 'SS.MM.FF.NN', 'Scienze Geologiche', '2008/2009'),\n(5, 'SS.MM.FF.NN', 'Chimica Industriale', '1992/1993'),\n(6, 'SS.MM.FF.NN', 'Fisica', '1995/1996'),\n(7, 'SS.MM.FF.NN', 'Scienza dei Materiali', '2005/2006'),\n(8, 'SS.MM.FF.NN', 'Scienze Ambientali', '2008/2009'),\n(9, 'SS.MM.FF.NN', 'Informatica', '2004/2005'),\n(10, 'SS.MM.FF.NN', 'Scienze dell''Informazione', '1996/1997'),\n(15, 'Agraria', 'Scienze e Tecnologie Alimentari','2004/2005'),\n(16, 'Economia', 'Economia e Commercio', '1992/1993'),\n(17, 'Ingegneria', 'Ingegneria Elettronica', '1982/1983'),\n(18, 'Medicina e chirurgia', 'Biotecnologie', '2008/2009'),\n(19, 'Giurisprudenza', 'Giurisprudenza', '2007/2008'),\n(20, 'Farmacia', 'Biotecnologie', '2004/2005'),\n(21, 'Agraria', 'Scienze Ambientali', '2009/2010'),\n(22, 'Agraria', 'Biotecnologie', '2002/2003'),\n(23, 'Agraria', 'Scienze e Tecnologie Agrarie', '2007/2008'),\n(24, 'Medicina e Chirurgia', 'Odontoiatria', '2007/2008'),\n(25, 'Lettere e Filosofia', 'Filosofia', '1985/1986'),\n(26, 'Lettere e Filosofia', 'Lettere', '1985/1986'),\n(27, 'Ingegneria', 'Ingegneria Informatica', '1995/1996');\n------------------------------------------------------------------------------------------------\n\nCREATE TABLE Corsi(\nId char(10) PRIMARY KEY,\nCorsoDiLaurea decimal(3) NOT NULL REFERENCES CorsiDiLaurea (id) ON UPDATE CASCADE,\nDenominazione varchar(50) NOT NULL,\nProfessore decimal(5,0)  REFERENCES Professori (id) ON DELETE NO ACTION ON UPDATE CASCADE,\nAttivato boolean NOT NULL DEFAULT FALSE,\nUNIQUE (CorsoDiLaurea, Denominazione)\n);\n\nINSERT INTO Corsi VALUES\n('bdd1n', 9, 'Basi Di Dati 1', 15, TRUE),\n('bdd2', 9, 'Basi Di Dati 2', 1, TRUE),\n('ldp', 9, 'Linguaggi di Programmazione', 2, TRUE),\n('r1', 9, 'Reti di calcolatori 1', 3, TRUE),\n('r2', 9, 'Reti di Calcolatori 2', 3, TRUE),\n('elimm1', 9, 'Elaborazione delle immagini 1', 5, TRUE),\n('elimm2', 9, 'Elaborazione delle immagini 2', NULL, FALSE),\n('mecraz', 27, 'Meccanica Razionale', NULL, FALSE),\n('an1info', 9, 'Analisi 1', 1, TRUE),\n('an2info', 9, 'Analisi 2', NULL, FALSE),\n('an1mate', 1, 'Analisi 1', 1, TRUE),\n('an2mate', 1, 'Analisi 2', NULL, FALSE),\n('mate', 2, 'Istituzioni Matematiche', 2, TRUE),\n('mat', 20, 'Istituzioni Matematiche', 1, TRUE),\n('org1', 2, 'Chimica Organica 1', 10, TRUE),\n('graf', 9, 'Grafica', 22, TRUE),\n('ig', 9, 'Interfacce Grafiche', 22, TRUE),\n('fis1', 6, 'Fisica 1', 1, TRUE),\n('fis2', 6, 'Fisica 2 ', 2, TRUE),\n('infogen', 6, 'Informatica Generale', 8, TRUE),\n('infogenM', 1, 'Informatica Generale', 8, TRUE),\n('matGen', 27, 'Istituzioni Matematiche', 14, TRUE),\n('fis1si', 10, 'Fisica 1', 18, TRUE),\n('fis2si', 10, 'Fisica 2', null, FALSE),\n('ep', 25, 'Epistemologia', 7, TRUE),\n('ai1', 10, 'Intelligenza Artificiale 1', 25, TRUE),\n('ai2', 10, 'Intelligenza Artificiale 2', 27, TRUE),\n('ai1in', 9, 'Intelligenza Artificiale 1', 23, TRUE),\n('se', 9, 'Sistemi Esperti', 22, TRUE),\n('it', 9, 'Informatica Teorica ', 20, TRUE),\n('met', 10, 'Metodi', 19, TRUE),\n('algo1', 9, 'Algoritmi e strutture dati 1', 15, TRUE),\n('algo2', 10, 'Algoritmi e strutture dati 2', 15, TRUE),\n('mraz', 6, 'Meccanica Razionale', 3, TRUE),\n('mring', 17, 'Meccanica Razionale', 10, TRUE),\n('info', 27, 'Informatica', 6, TRUE),\n('ele1', 2, 'elettrochimica 1', 20, TRUE),\n('ele2', 2, 'elettrochimica 2', 22, TRUE);\n-----------------------------------------------------------------------------------------------------\n\n/**** Studenti ****/\nCREATE TABLE Studenti(\nMatricola varchar(10) PRIMARY KEY,\nCognome varchar(30) NOT NULL,\nNome varchar(30) NOT NULL,\nResidenza varchar(30) NOT NULL,\nDataNascita date NOT NULL,\nLuogoNascita varchar(30) NOT NULL,\nCorsoDiLaurea decimal(3,0)  REFERENCES CorsiDiLaurea (id) ON UPDATE CASCADE NOT NULL,\nIscrizione integer NOT NULL,\nRelatore decimal(5,0)  REFERENCES Professori (id) ON UPDATE CASCADE,\nLaurea date,\nUNIQUE(Cognome,Nome,DataNascita, LuogoNascita, CORSODILAUREA)\n);\n\nINSERT INTO Studenti VALUES\n('pd123745', 'Rossi', 'Mario', 'Genova', '12/23/1987', 'Savona', 9, '2006', 1, NULL),\n('se2084', 'Gelli', 'Mirko', 'Genova', '07/01/1990', 'Savona', 1, '2009', NULL, NULL),\n('cdo42361', 'Parodi', 'Franca', 'Savona', '08/15/1989', 'Rimini', 4, '2008', 1, NULL),\n('23re123', 'Verdi', 'Luisa', 'Roma', '08/04/1990', 'Bari', 4, '2009', 1, NULL),\n('sc4023', 'Mercurio', 'Giuliano', 'La Spezia', '01/06/1990', 'Novi Ligure', 9, '2006', 21, NULL),\n('pl5672', 'Merello', 'Fabrizio', 'Noli', '07/03/1990', 'Firenze', 6, '1999', 21, NULL),\n('hg76394', 'Merella', 'Maurizio', 'Loano', '12/15/1986', 'Darfo B. T.', 9, '2005', 12, NULL),\n('iu765', 'Gavilli', 'Dino', 'La Spezia', '01/06/1990', 'Novi Ligure', 9, '2006', 21, NULL),\n('mf192', 'Fara', 'Vincenzo', 'Spotorno', '07/03/1985', 'Firenze', 9, '1999', 3, NULL),\n('9uhg563', 'FAnizzi', 'Maurizio', 'Boissano', '12/15/1991', 'Milano', 1, '2003', 5, NULL),\n('ed362', 'Gavizzi', 'Pietro', 'Bogliasco', '01/15/1989', 'Genova', 19, '2002', 7, '02/23/2010'),\n('kfi345', 'Fantino', 'Giuliano', 'Genova', '07/08/1990', 'Genova', 9, '2006', 4, '03/12/2011'),\n('pl489d', 'Bodrato', 'Fabrizio', 'Genova', '11/03/1990', 'Arquata Scrivia', 1, '2005', 1, NULL),\n('hg763d', 'De Vecchi', 'Maurizio', 'Genova', '12/12/1989', 'Genova', 9, '2009', 4, NULL),\n('12gt5', 'Devoto', 'Stefania', 'Genova', '06/25/1988', 'La Spezia', 9, '2006', 2, null),\n('bd765', 'Gavilli', 'Mauro', 'La Spezia', '01/06/1990', 'Novi Ligure', 9, '2006', 21, NULL),\n('ijff192', 'Fara', 'Vincenza', 'Spotorno', '07/03/1985', 'Firenze', 9, '1999', 3, NULL),\n('45hg563', 'FAnizzi', 'Angela', 'Genova', '12/15/1991', 'Milano', 1, '2003', 5, '04/03/2011'),\n('e3462', 'Gavizzi', 'Simona', 'Bogliasco', '01/15/1989', 'Genova', 19, '2009', 7, null),\n('kf7645', 'Fantino', 'Giulia', 'Genova', '07/08/1990', 'Genova', 9, '2006', 4, null),\n('hy489d', 'Bodrato', 'Fabiana', 'Genova', '11/03/1990', 'Arquata Scrivia', 1, '2005', 1, NULL),\n('h8u763d', 'De Vecchi', 'Massimiliano', 'Genova', '12/12/1989', 'Genova', 9, '2009', 4, NULL),\n('23gt5', 'Devoto', 'Gianni', 'Genova', '06/25/1988', 'La Spezia', 9, '2006', 2, '10/24/2011'),\n('ki1235', 'Rossini', 'Mario', 'Genova', '12/23/1979', 'Genova', 9, '2004', 1, null),\n('se26084', 'Gellini', 'Marco', 'Genova', '07/01/1990', 'Savona', 1, '2009', NULL, NULL),\n('cdo361', 'Parodi', 'Francesco', 'Savona', '08/15/1989', 'Rimini', 4, '2008', 1, NULL),\n('23re12yr3', 'De Vecchi', 'Luisa', 'Roma', '08/04/1990', 'Bari', 4, '2009', 1, NULL),\n('sc47e023', 'Marcia', 'Giuliano', 'La Spezia', '01/06/1990', 'Novi Ligure', 9, '2006', 8, null),\n('ed12yr3', 'Rossi', 'Mario', 'Roma', '08/04/1990', 'Bari', 4, '2009', 1, NULL),\n('pl567re2', 'Marello', 'Fabrizio', 'Noli', '07/03/1990', 'Firenze', 6, '1999', 21, NULL),\n('hg794', 'Marte', 'Maurizio', 'Loano', '12/15/1986', 'Brescia', 9, '2005', 12, NULL),\n('12765tr', 'Gavizzi', 'Stefania', 'Roma', '06/13/1983', 'Roma', 19, '2002', 7, '02/21/2010'),\n('lu765', 'Gavilli', 'Daniela', 'La Spezia', '01/06/1990', 'Novi Ligure', 9, '2006', 21, NULL),\n('mfiu192', 'Farassa', 'Vincenzina', 'Spotorno', '07/03/1985', 'Firenze', 9, '1999', 8, NULL),\n('9ug563', 'Ferizzi', 'Maurizio', 'Boissano', '12/15/1991', 'Milano', 1, '2003', 5, NULL),\n('xsed362', 'Gavilli', 'Giulio', 'Bogliasco', '01/15/1989', 'Genova', 19, '2002', 7, '02/21/2010'),\n('lofi345', 'Fantino', 'Alberto', 'Genova', '07/08/1990', 'Genova', 9, '2006', 4, '03/21/2011'),\n('pl9d', 'Bodrato', 'Emanuele', 'Genova', '11/03/1990', 'Arquata Scrivia', 1, '2005', 1, NULL),\n('hg7d', 'Devoto', 'Marilena', 'Genova', '12/12/1989', 'Genova', 9, '1999', 4, NULL),\n('12olgt5', 'Casaccio', 'Stefania', 'Genova', '06/25/1988', 'La Spezia', 9, '2006', 2, null),\n('bd70f65', 'Novarese', 'Mauro', 'La Spezia', '01/06/1990', 'Novi Ligure', 9, '2006', 21, NULL),\n('ijfer92', 'Novella', 'Vincenza', 'Spotorno', '07/03/1985', 'Firenze', 9, '1999', 3, NULL),\n('43olg563', 'Filli', 'Angela', 'Genova', '12/15/1991', 'Milano', 1, '2003', 5, NULL),\n('cde3462', 'Licci', 'Simona', 'Bogliasco', '01/15/1989', 'Genova', 19, '2005', 7, null),\n('kf76hy', 'Damassino', 'Giulia', 'Genova', '07/08/1990', 'Genova', 9, '2006', 4, null),\n('hy4mj89d', 'Baroncelli', 'Fabiana', 'Genova', '11/03/1990', 'Arquata Scrivia', 1, '2005', 1, NULL),\n('h3d', 'De Sanctis', 'Massimiliano', 'Genova', '12/12/1989', 'Genova', 9, '2009', 4, NULL),\n('23glot5', 'Danza', 'Gianni', 'Genova', '06/25/1988', 'La Spezia', 9, '2006', 2, null),\n('dy192', 'Farazza', 'Valentina', 'Genova', '07/03/1982', 'Firenze', 6, '1999', 3, '07/03/2006'),\n('rehg563', 'Fabrizi', 'Maura', 'Boissano', '12/15/1983', 'Milano', 6, '2002', 5, '04/03/2007'),\n('ewd362', 'Serra', 'Pietro', 'Genova', '01/15/1986', 'Genova', 6, '2002', 7, '02/21/2009'),\n('kefi345', 'Melogno', 'Giuliano', 'Genova', '07/08/1984', 'Genova', 6, '2003', 4, '03/12/2010'),\n('dy3192', 'Farazza', 'Michele', 'Genova', '07/03/1982', 'Firenze', 9, '2010', null, null),\n('r5g563', 'Fabrizi', 'Morena', 'Boissano', '12/15/1983', 'Milano', 9, '2010', null, null),\n('e8fdy62', 'Serra', 'Paride', 'Genova', '01/15/1986', 'Genova', 9, '2010', null, null),\n('kedue45', 'Melogno', 'Gennaro', 'Genova', '07/08/1984', 'Genova', 9, '2010', null, null),\n('dy3192fr', 'Farazza', 'Michele','Genova', '07/03/1990', 'Firenze', 1, '2010', null,null),\n('r5g56de3', 'Fabrizi', 'Morena', 'Boissano', '12/15/1988', 'Milano', 1, '2010', null, null),\n('e8fdy62fs', 'Serra', 'Paride', 'Genova', '01/15/1990', 'Genova', 6, '2010', null, null),\n('kedue45srt', 'Melogno', 'Gennaro', 'Genova', '07/08/1989', 'Genova', 6, '2010', null,null),\n('kee45srt', 'Melogno', 'Gennaro', 'Genova', '07/08/1983', 'Genova', 6, '2010', null, null),\n('af198aa', 'Farano', 'Anna', 'Spotorno', '07/03/1985', 'Firenze', 9, '2007', 3, '02/23/2013' ),\n('nm4hg56', 'Nizzi', 'Marco', 'Genova', '12/15/1989', 'Genova', 1, '2008', 5,'02/03/2013'),\n('am166mm', 'Merlo', 'Anita', 'Rapallo', '07/03/1989', 'Genova', 9, '2008', 3, '06/23/2013' );\n\n\n---------------------------------------------------------------------------------------------\n\n/**** ESAMI ****/\nCREATE TABLE Esami(\nStudente varchar(10) REFERENCES Studenti \n(matricola) ON UPDATE CASCADE, /* aggiunto update*/\nCorso char(10)  REFERENCES Corsi (id) ON UPDATE NO ACTION, /* aggiunto update*/\nData date,\nVoto decimal(2,0) NOT NULL check (Voto  between 1 and 33),\nPRIMARY KEY(Studente,Corso,Data)\n);\n\n\nINSERT INTO Esami VALUES\n('23glot5', 'algo1', '02/20/2008', 21),\n('23glot5', 'graf', '7/20/2008', 25),\n('23glot5', 'bdd2', '02/27/2009', 29),\n('23glot5', 'bdd1n', '9/8/2010', 27),\n('23glot5', 'it', '06/2/2009', 30),\n('23glot5', 'ldp', '9/9/2011', 27),\n('23glot5', 'r1', '11/27/2009', 29),\n('23glot5', 'r2', '9/21/2011', 30),\n('bd70f65', 'algo1', '02/20/2008', 21),\n('bd70f65', 'graf', '7/20/2008', 25),\n('bd70f65', 'bdd2', '02/27/2009', 29),\n('bd70f65', 'bdd1n', '9/8/2010', 27),\n('bd70f65', 'it', '06/2/2009', 30),\n('bd70f65', 'ldp', '9/9/2011', 27),\n('bd70f65', 'r1', '11/27/2009', 29),\n('bd70f65', 'r2', '9/21/2011', 30),\n('h3d', 'algo1', '02/20/2010', 21),\n('h3d', 'graf', '7/20/2010', 25),\n('h3d', 'bdd2', '02/27/2011', 29),\n('h3d', 'bdd1n', '9/8/2011', 27),\n('ijff192', 'algo1', '02/20/2008', 21),\n('ijff192', 'graf', '7/20/2008', 20),\n('ijff192', 'bdd2', '02/27/2004', 19),\n('ijff192', 'an1mate', '02/27/2010', 19),\n('ijff192', 'bdd1n', '9/8/2010', 27),\n('ijff192', 'it', '04/2/2008', 30),\n('ijff192', 'ldp', '9/9/2011', 27),\n('ijff192', 'r1', '11/27/2009', 29),\n('ijff192', 'r2', '9/21/2011', 30),\n('sc47e023', 'bdd1n', '9/8/2010', 27),\n('sc47e023', 'it', '04/2/2008', 30),\n('sc47e023', 'ldp', '9/9/2011', 27),\n('sc47e023', 'r1', '11/27/2009', 29),\n('sc47e023', 'r2', '2/15/2012', 29),\n('hy489d', 'infogenM', '2/15/2010', 18),\n('43olg563', 'an2mate', '2/15/2010', 25),\n('43olg563', 'infogenM', '2/15/2012', 25),\n('45hg563', 'infogenM', '2/15/2012', 20),\n('hy4mj89d', 'infogenM', '2/15/2012', 19),\n('pl9d', 'infogenM', '2/15/2012', 19),\n('se2084', 'infogenM', '2/15/2012', 29);\n\n----------------------------------------------------------------------------------------------------\n\n/**** PianiDiStudio ****/\nCREATE TABLE PianiDiStudio(\nStudente varchar(10) REFERENCES Studenti (matricola) ON UPDATE CASCADE, /* aggiunto update*/\nAnnoAccademico integer not null,\nAnno decimal(1,0) check (Anno  between 1 and 6),\nPRIMARY KEY(Studente,AnnoAccademico,Anno)\n);\n\n\nINSERT INTO PianiDiStudio VALUES\n('kf7645', '2011', 5),\n('kf76hy', '2011', 5),\n('kfi345', '2011', 5),\n('mfiu192','2011', 5),\n('ki1235', '2011', 5),\n('pd123745','2011', 5),\n('sc4023', '2011', 5),\n('sc47e023','2011', 5),\n('23re123', '2010', 2),\n('45hg563', '2003', 1),\n('45hg563', '2004', 2),\n('45hg563', '2005', 3),\n('45hg563', '2010', 4),\n('bd765', '2006', 1),\n('bd765', '2007', 2),\n('bd765', '2008', 3),\n('bd765', '2010', 4),\n('bd765', '2011', 5),\n('23gt5', '2006', 1),\n('23gt5', '2007', 2),\n('23gt5', '2008', 3),\n('23gt5', '2010', 4),\n('23gt5', '2011', 5),\n('h8u763d', '2009', 1),\n('h8u763d', '2010', 2),\n('h8u763d', '2011', 3);\n\nINSERT INTO esami VALUES('h3d', 'bdd1n', '10/08/2009', 20),\n('bd70f65', 'bdd1n', '10/08/2009', 29),\n('bd70f65', 'ig', '10/22/2009', 24),\n('23glot5', 'bdd1n', '10/08/2009', 23),\n('ijff192', 'bdd1n', '06/15/2010', 22),\n('sc47e023', 'bdd1n', '06/15/2010', 20),\n('ijff192', 'ig', '06/30/2010', 24),\n('sc47e023', 'ig', '06/29/2010', 27),\n('23glot5', 'algo1', '06/01/2010', 32),\n('23glot5', 'ldp', '06/09/2010', 22),\n('bd70f65', 'bdd1n', '10/08/2008', 12),\n('bd70f65', 'ig', '09/01/2009', 15),\n('23glot5', 'bdd1n', '02/12/2009', 10),\n('ijff192', 'bdd1n', '01/15/2010', 8),\n('sc47e023', 'ig', '04/12/2010', 16),\n('23glot5', 'algo1', '04/01/2010', 12),\n('23glot5', 'ldp', '01/07/2010', 13),\n('23glot5', 'it', '04/01/2009', 10),\n('23glot5', 'ldp', '7/9/2011', 7),\n('23glot5', 'r1', '01/27/2009', 9),\n('23glot5', 'r2', '02/21/2011', 10),\n('bd70f65', 'algo1', '02/20/2007', 11),\n('bd70f65', 'graf', '06/20/2008', 5),\n('h8u763d', 'an1info', '02/21/2010', 10),\n('hg76394', 'an1info', '02/21/2010', 8),\n('hg763d', 'an1info', '02/21/2010', 15),\n('h8u763d', 'an2info', '02/21/2011', 10),\n('hg76394', 'an2info', '02/21/2011', 8),\n('hg763d', 'an2info', '02/21/2011', 15),\n('h8u763d', 'elimm1', '02/21/2009', 10),\n('hg76394', 'elimm1', '02/21/2009', 8),\n('hg763d', 'elimm2', '02/21/2009', 15),\n('e8fdy62fs', 'fis1', '02/21/2009', 20),\n('e8fdy62fs', 'fis2', '06/21/2009', 24),\n('e8fdy62fs', 'infogen', '04/21/2010', 27),\n('e8fdy62fs', 'mraz', '06/21/2011', 28),\n('kee45srt', 'fis1', '02/21/2009', 20),\n('kee45srt', 'fis2', '06/21/2009', 24),\n('kee45srt', 'infogen', '04/21/2010', 27),\n('kee45srt', 'mraz', '06/21/2011', 28),\n('dy3192fr', 'an1mate', '06/21/2009', 24),\n('dy3192fr', 'an2mate', '04/21/2010', 27),\n('dy3192fr', 'infogenM', '06/21/2011', 28),\n('9ug563', 'an2mate', '06/07/2010', 14),   \n('dy3192fr', 'an2mate', '06/07/2010', 24),   \n('9uhg563', 'an2mate', '06/07/2010', 21),   \n('pl489d', 'infogenM', '06/15/2010', 22),   \n('kedue45srt', 'infogen', '06/12/2010', 14),   \n('kee45srt', 'fis2', '06/14/2010', 24),   \n('kefi345', 'fis2', '06/14/2010', 21),   \n('dy192', 'fis1', '06/30/2010', 22),\n('hg794', 'r2', '06/14/2010', 21),   \n('hg7d', 'r2', '06/30/2010', 22),\n('kfi345', 'algo1', '06/20/2010', 21),   \n('ki1235', 'elimm2', '06/20/2010', 22),   \n('kedue45', 'bdd1n', '06/20/2010', 21),   \n('lofi345', 'bdd1n', '06/20/2010', 22), \n('sc4023', 'ig', '06/20/2010', 22),   \n('mf192', 'ig', '06/20/2010', 21),\n('r5g563', 'ig', '06/20/2010', 22), \n('kf7645', 'bdd1n', '06/13/2010', 22), \n('kf76hy', 'ig', '06/1/2010', 22),   \n('mfiu192', 'ig', '06/1/2010', 21),\n('pd123745', 'ig', '06/1/2010', 22);\n\n\ncommit;",
+  "dbms": "postgresql",
+  "description": "Funzioni di gruppo, raggruppamento e prime sottointerrogazioni",
+  "domain": null,
+  "exercises": [
+    {
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "request": "Selezionare l’elenco in ordine alfabetico (per denominazione) dei corsi, con eventuale cognome e nome del professore titolare.",
+      "solutions": [
+        "SELECT\n    denominazione,\n    cognome,\n    nome\nFROM corsi LEFT JOIN professori ON professore=professori.id\nORDER BY denominazione"
+      ],
+      "title": "Esercizio 1.1"
+    },
+    {
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "request": "Selezionare l’elenco alfabetico degli studenti iscritti a matematica, riportando cognome e nome, e l’eventuale cognome del relatore che li segue per la tesi.",
+      "solutions": [
+        "SELECT\n    s.cognome,\n    s.nome,\n    p.cognome\nFROM\n    studenti s\n    JOIN corsidilaurea cdl ON s.corsodilaurea = cdl.id\n    LEFT JOIN professori p ON s.relatore = p.id\nwhere cdl.denominazione = 'Matematica'\nORDER BY 1, 2"
+      ],
+      "title": "Esercizio 1.2"
+    },
+    {
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "request": "Selezionare la votazione minima, media e massima conseguita nei corsi del corso di laurea in informatica.",
+      "solutions": [
+        "select min(voto), avg(voto), max(voto)\nfrom esami join corsi on corso = corsi.id\njoin corsidilaurea on corsodilaurea=corsidilaurea.id\nwhere corsidilaurea.denominazione='Informatica';"
+      ],
+      "title": "Esercizio 2.1"
+    },
+    {
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "request": "Selezionare i nominativi, in ordine alfabetico, dei professori titolari di più di due corsi attivati, con l’indicazione di quanti corsi tengono.",
+      "solutions": [
+        "select cognome, nome, count(*)\nfrom corsi inner join professori on professore=professori.id\nwhere attivato= TRUE\ngroup by professore, cognome, nome having count(*)>2\norder by cognome, nome;"
+      ],
+      "title": "Esercizio 2.2"
+    },
+    {
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "request": "(*) Selezionare l’elenco, in ordine alfabetico, dei cognomi e nomi dei professori con l’indicazione del numero di studenti di cui sono relatori, indicando 0 se non seguono alcuno studente per la tesi.",
+      "solutions": [
+        "select professori.cognome, professori.nome, count(matricola)\nfrom studenti right join professori on id = relatore\ngroup by relatore, professori.cognome, professori.nome\norder by professori.cognome, professori.nome;"
+      ],
+      "title": "Esercizio 2.4"
+    },
+    {
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "request": "Selezionare l’elenco, in ordine alfabetico, dei cognomi e nomi dei professori con l’indicazione del numero di studenti di cui sono relatori.",
+      "solutions": [
+        "select professori.cognome, professori.nome, count(*)\nfrom studenti join professori on id = relatore\ngroup by relatore, professori.cognome, professori.nome\norder by professori.cognome, professori.nome;"
+      ],
+      "title": "Esercizio 2.3"
+    },
+    {
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "request": "(*) Selezionare la matricola degli studenti iscritti al corso di studi in informatica che hanno registrato (almeno) due voti per corsi diversi nello stesso mese, con la media dei voti riportati.",
+      "solutions": [
+        "select matricola, extract(month from data) as mese, extract(year from data) as anno, avg(voto) as media\nfrom esami join studenti on matricola = studente\njoin corsidilaurea on corsodilaurea=id\nwhere corsidilaurea.denominazione='Informatica'\ngroup by matricola, extract(month from data),extract(year from data)\nhaving count(*) >= 2;"
+      ],
+      "title": "Esercizio 2.5"
+    },
+    {
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "request": "Selezionare la matricola dello studente di informatica che ha conseguito la votazione più alta.",
+      "solutions": [
+        "select matricola\nfrom  corsidilaurea join studenti on corsodilaurea=corsidilaurea.id\njoin esami on studente = matricola\nwhere denominazione='Informatica' and\nvoto = (select max(voto) from corsidilaurea join studenti on corsodilaurea=corsidilaurea.id\n        join esami on studente = matricola\n        where denominazione='Informatica');"
+      ],
+      "title": "Esercizio 3.1"
+    },
+    {
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "request": "(*) Selezionare l'elenco dei corsi di laurea che nell’A.A. 2010/2011 hanno meno iscritti di quelli che si sono avuti ad informatica nello stesso A.A.",
+      "solutions": [
+        "select corsidilaurea.denominazione\nfrom  corsidilaurea join studenti on corsodilaurea=corsidilaurea.id\nwhere iscrizione = 2010\ngroup by corsidilaurea.id, denominazione\nhaving count(*) < (select count(*)\nfrom  corsidilaurea join studenti on corsodilaurea=corsidilaurea.id\nwhere iscrizione = 2010 and denominazione ='Informatica');"
+      ],
+      "title": "Esercizio 3.2"
+    },
+    {
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "request": "Selezionare l’elenco dei cognomi, in ordine di codice identificativo, dei professori con l’indicazione del cognome, del nome e della matricola degli studenti di cui sono relatori, laddove seguano degli studenti per la tesi.",
+      "solutions": [
+        "select professori.cognome, studenti.cognome, studenti.nome, studenti.matricola\nfrom studenti right join professori on id = relatore\norder by professori.id;"
+      ],
+      "title": "Esercizio 4.1"
+    },
+    {
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "request": "Selezionare lo stipendio massimo, minimo e medio dei professori.",
+      "solutions": [
+        "select max(stipendio), min(stipendio), avg(stipendio) from professori;\n"
+      ],
+      "title": "Esercizio 5.1"
+    },
+    {
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "request": "Selezionare il voto massimo registrato in ogni corso di laurea, riportandone anche la denominazione.",
+      "solutions": [
+        "select cdl.denominazione, max(voto)\nfrom esami e join corsi c on c.id = e.corso join corsidilaurea cdl on cdl.id = c.corsodilaurea\ngroup by cdl.denominazione;\n"
+      ],
+      "title": "Esercizio 5.2"
+    },
+    {
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "request": "Seleziona i nomi dei corsi di informatica per i quali sono stati registrati meno di 5 esami a partire dal 1 aprile 2012.",
+      "solutions": [
+        "select corsi.denominazione\nfrom esami join corsi on esami.corso=corsi.id\njoin corsidilaurea on corsodilaurea=corsidilaurea.id\nwhere corsidilaurea.denominazione='Informatica' and data > '01-04-2012'\ngroup by corso, corsi.denominazione\nhaving count(*)< 5;"
+      ],
+      "title": "Esercizio 5.3"
+    },
+    {
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "request": "(*) Seleziona i nomi dei corsi di informatica per i quali sono stati registrati meno di 5 esami a partire dal 1 aprile 2012, includendo anche i corsi per cui non sono stati registrati esami a partire dal 1 aprile 2012.",
+      "solutions": [
+        "select corsi.denominazione\nfrom corsi join corsidilaurea on corsodilaurea=corsidilaurea.id\nwhere corsidilaurea.denominazione='Informatica'\nexcept\nselect corsi.denominazione\nfrom esami join corsi on esami.corso=corsi.id\njoin corsidilaurea on corsodilaurea=corsidilaurea.id\nwhere corsidilaurea.denominazione='Informatica' and data > '01-04-2012'\ngroup by corso, corsi.denominazione\nhaving count(*) >= 5;"
+      ],
+      "title": "Esercizio 5.4"
+    },
+    {
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "request": "Selezionare nome e cognome del professore titolare del corso in cui è stata assegnata la votazione più alta.",
+      "solutions": [
+        "select nome, cognome\nfrom professori\njoin corsi on professori.id=professore\njoin esami on corsi.id=corso\nwhere voto >= all (select voto from esami)"
+      ],
+      "title": "Esercizio 6.1"
+    },
+    {
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "request": "Selezionare la matricola degli studenti che si sono laureati in informatica prima del novembre 2009 - formulare usando una sotto-interrogazione e non join nè prodotto Cartesiano.",
+      "solutions": [
+        "select matricola\nfrom studenti\nwhere corsodilaurea = (select id from corsidilaurea where denominazione='Informatica')\nand matricola in (select matricola from studenti where laurea < '11/01/2009')"
+      ],
+      "title": "Esercizio 6.2"
+    },
+    {
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "request": "Selezionare la matricola la matricola degli studenti di informatica che nel mese di giugno 2010 hanno registrato voti per il corso di basi di dati 1 ma non per quello di interfacce grafiche - formulare senza usare operatori insiemistici.",
+      "solutions": [
+        "select matricola\nfrom  corsidilaurea join studenti on corsodilaurea=corsidilaurea.id\nwhere denominazione='Informatica' and\nmatricola in (select studente from esami join corsi on corso=corsi.id\n              where denominazione ='Basi Di Dati 1' and data between '06-01-2010' and '06-30-2010')\n              and\nmatricola not in (select studente from esami join corsi on corso=corsi.id\n              where denominazione ='Interfacce Grafiche' and data between '06-01-2010' and '06-30-2010');\n"
+      ],
+      "title": "Esercizio 6.3"
+    },
+    {
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "request": "Selezionare la matricola la matricola degli studenti di informatica che nel mese di giugno 2010 hanno registrato voti sia per il corso di basi di dati 1 che per quello di interfacce grafiche - formulare senza usare operatori insiemistici.",
+      "solutions": [
+        "select matricola\nfrom  corsidilaurea join studenti on corsodilaurea=corsidilaurea.id\nwhere denominazione='Informatica' and\nmatricola in (select studente from esami join corsi on corso=corsi.id\n              where denominazione ='Basi Di Dati 1' and data between '2010-06-01' and '06-30-2010')\n              and\nmatricola in (select studente from esami join corsi on corso=corsi.id\n              where denominazione ='Interfacce Grafiche' and data between '06-01-2010' and '06-30-2010');"
+      ],
+      "title": "Esercizio 6.4"
+    }
+  ],
+  "search_path": "unicorsi",
+  "title": "Lab 3a - Interrogazioni SQL"
+}

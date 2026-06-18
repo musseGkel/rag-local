@@ -7,18 +7,18 @@ import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from langchain_core.documents import Document
 
-# retriever (MMR + CrossEncoder) to get relevant docs for generation
+# your retriever (MMR + CrossEncoder, the one we just fixed)
 from retriever_reranker_server import retrieve_for_generation
 
-# Hugging Face model id (matches cached folder models--microsoft--phi-4-mini-instruct)
+# Hugging Face model id (matches your cached folder models--microsoft--phi-4-mini-instruct)
 MODEL_ID = os.getenv("GEN_MODEL", "microsoft/phi-4-mini-instruct")
 
 # keep context tight
-MAX_CONTEXT_CHARS = 30000
+MAX_CONTEXT_CHARS = 9000
 
 # Global model + tokenizer (load once, reuse for all queries)
-_TOKENIZER: AutoTokenizer | None = None # converts raw text to token ids (that the model uses) and back
-_MODEL: AutoModelForCausalLM | None = None # the actual language model that generates text
+_TOKENIZER: AutoTokenizer | None = None
+_MODEL: AutoModelForCausalLM | None = None
 
 from dataclasses import dataclass
 from lens_prompts import LensPrompt, LENS_SYSTEM_PROMPT
@@ -46,20 +46,24 @@ def build_context(docs: List[Document]) -> str:
         ctx = ctx[:MAX_CONTEXT_CHARS] + "\n\n[Context truncated]"
     return ctx
 
+
 def build_messages(prompt: LensPrompt, context: str):
     messages = [{"role": "system", "content": LENS_SYSTEM_PROMPT}]
 
     if context:
-        messages.append({
-            "role": "system",
-            "content": (
-                "Reference notes for answering (do not quote, do not reveal):\n"
-                + context
-            ),
-        })
+        messages.append(
+            {
+                "role": "system",
+                "content": (
+                    "Reference notes for answering (do not quote, do not reveal):\n"
+                    + context
+                ),
+            }
+        )
 
     messages.append({"role": "user", "content": prompt.generation_query})
     return messages
+
 
 # def build_messages(prompt: LensPrompt, context: str):
 #     system = LENS_SYSTEM_PROMPT
@@ -85,7 +89,6 @@ def build_messages(prompt: LensPrompt, context: str):
 #     ]
 
 
-
 def get_hf_model():
     global _TOKENIZER, _MODEL
     if _TOKENIZER is None or _MODEL is None:
@@ -95,12 +98,14 @@ def get_hf_model():
         _MODEL = AutoModelForCausalLM.from_pretrained(
             MODEL_ID,
             dtype=dtype,
-            device_map="auto",   # use all available GPUs/CPU sensibly
+            device_map="auto",  # use all available GPUs/CPU sensibly
         )
     return _TOKENIZER, _MODEL
 
 
-def hf_chat_generate(messages, max_new_tokens: int = 700, temperature: float = 0.2, top_p: float = 0.9) -> str:
+def hf_chat_generate(
+    messages, max_new_tokens: int = 700, temperature: float = 0.2, top_p: float = 0.9
+) -> str:
     tokenizer, model = get_hf_model()
 
     # use the chat template that Phi-4 provides in its tokenizer config
@@ -123,9 +128,10 @@ def hf_chat_generate(messages, max_new_tokens: int = 700, temperature: float = 0
         )
 
     # only decode the newly generated tokens
-    generated_ids = output_ids[0][inputs["input_ids"].shape[1]:]
+    generated_ids = output_ids[0][inputs["input_ids"].shape[1] :]
     text = tokenizer.decode(generated_ids, skip_special_tokens=True)
     return text.strip()
+
 
 def sanitize_answer(text: str) -> str:
     # Hard stop if the model starts leaking the context block
@@ -145,12 +151,20 @@ def sanitize_answer(text: str) -> str:
         text = text[:earliest].rstrip()
     return text
 
+
 def rag_answer(prompt: LensPrompt) -> str:
     use_rag = prompt.mode not in {"describe_query", "explain_query"}
 
-    docs = retrieve_for_generation(prompt.retrieval_query) if use_rag else []
+    docs = (
+        retrieve_for_generation(
+            prompt.retrieval_query,
+            construct_tags=getattr(prompt, "construct_tags", None),
+        )
+        if use_rag
+        else []
+    )
     context = build_context(docs) if use_rag else ""
-    
+
     # generation uses prompt.generation_query
     messages = build_messages(prompt, context)
 
@@ -164,7 +178,7 @@ def rag_answer(prompt: LensPrompt) -> str:
 
     if not use_rag or not docs:
         return answer
-    
+
     # # compact sources list
     # lines = ["", "Sources:"]
     # shown = 0
@@ -180,9 +194,10 @@ def rag_answer(prompt: LensPrompt) -> str:
     # if shown == 0:
     #     return answer
 
-    return answer 
-#+ "\n" + "\n".join(lines)
+    return answer
 
+
+# + "\n" + "\n".join(lines)
 
 
 if __name__ == "__main__":
@@ -230,39 +245,40 @@ if __name__ == "__main__":
 
     elif mode == "where_is_error_long":
         user_sql = """
-        SELECT B.Matricola
-        FROM (
-        SELECT S.Matricola
-        FROM Studenti S
-        JOIN CorsiDiLaurea CDL
-            ON S.CorsoDiLaurea = CDL.id
-        AND CDL.Denominazione = 'Informatica'
-        JOIN Corsi C
-            ON C.CorsoDiLaurea = CDL.id
-        JOIN Esami E
-            ON E.Corso = C.id
-        AND C.id = 'bdd1n'
-        AND E.Studente = S.Matricola
-        WHERE EXTRACT(MONTH FROM E.Data) = 06
-            AND EXTRACT(YEAR FROM E.Data) =
-        ) AS B
-        JOIN (
-        SELECT S2.Matricola
-        FROM Studenti S2
-        JOIN CorsiDiLaurea CDL2
-            ON S2.CorsoDiLaurea = CDL2.id
-        AND CDL2.Denominazione = 'Informatica'
-        JOIN Corsi C2
-            ON C2.CorsoDiLaurea = CDL2.id
-        JOIN Esami E2
-            ON E2.Corso = C2.id
-        AND C2.id = 'ig'
-        AND E2.Studente = S2.Matricola
-        WHERE EXTRACT(MONTH FROM E2.Data) = 06
-            AND EXTRACT(YEAR FROM E2.Data) = 2010
-        ) AS I
-        ON B.Matricola = I.Matricola;
-        """
+SELECT B.Matricola
+FROM (
+  SELECT S.Matricola
+  FROM Studenti S
+  JOIN CorsiDiLaurea CDL
+    ON S.CorsoDiLaurea = CDL.id
+   AND CDL.Denominazione = 'Informatica'
+  JOIN Corsi C
+    ON C.CorsoDiLaurea = CDL.id
+  JOIN Esami E
+    ON E.Corso = C.id
+   AND C.id = 'bdd1n'
+   AND E.Studente = S.Matricola
+  WHERE EXTRACT(MONTH FROM E.Data) = 06
+    AND EXTRACT(YEAR FROM E.Data) =
+) AS B
+JOIN (
+  SELECT S2.Matricola
+  FROM Studenti S2
+  JOIN CorsiDiLaurea CDL2
+    ON S2.CorsoDiLaurea = CDL2.id
+   AND CDL2.Denominazione = 'Informatica'
+  JOIN Corsi C2
+    ON C2.CorsoDiLaurea = CDL2.id
+  JOIN Esami E2
+    ON E2.Corso = C2.id
+   AND C2.id = 'ig'
+   AND E2.Studente = S2.Matricola
+  WHERE EXTRACT(MONTH FROM E2.Data) = 06
+    AND EXTRACT(YEAR FROM E2.Data) = 2010
+) AS I
+ON B.Matricola = I.Matricola;
+
+"""
         prompt = make_where_is_error_prompt(
             user_sql=user_sql,
             error_message="",
@@ -271,5 +287,5 @@ if __name__ == "__main__":
 
     else:
         raise ValueError(f"Unknown mode: {mode}")
-    
+
     print(rag_answer(prompt))

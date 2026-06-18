@@ -52,9 +52,16 @@ def generate_exercise(
         from retriever_reranker_server import retrieve_for_generation
         from generator_phi3_server import build_context
 
-        docs = retrieve_for_generation(prompt.retrieval_query)
+        debug_tags = getattr(prompt, "construct_tags", None)
+        docs = retrieve_for_generation(
+            prompt.retrieval_query,
+            construct_tags=debug_tags,
+        )
 
         print(f"\n  [DEBUG] Retrieval query: {prompt.retrieval_query}")
+        print(
+            f"  [DEBUG] Construct tags (filter): {sorted(debug_tags) if debug_tags else None}"
+        )
         print(f"  [DEBUG] Retrieved {len(docs)} doc(s):")
         for d in docs:
             name = (

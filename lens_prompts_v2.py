@@ -32,6 +32,10 @@ class LensPrompt:
     generation_query: str
     answer_template: Optional[str] = None
     language: str = "en"
+    # Optional structural construct tags for the generation path. Used only by
+    # retrieve_for_generation to filter exercise examples. None for all Lens
+    # modes (describe/explain/etc.), which leaves retrieval unfiltered.
+    construct_tags: Optional[frozenset] = None
 
 
 # =========================

@@ -17,11 +17,10 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_core.documents import Document
 from sentence_transformers import CrossEncoder
 
-
 ROOT = Path(os.getenv("ROOT", "/opt/rag"))
 DB_DIR = ROOT / "db"
 EMBED_MODEL = os.getenv("EMBED_MODEL", "BAAI/bge-small-en-v1.5")
-COLLECTION = "sqlkb"
+COLLECTION = "sqlex"
 
 
 def load_vectorstore() -> Chroma:
@@ -82,12 +81,31 @@ def _get_reranker() -> CrossEncoder:
     return _reranker_model
 
 
+def _build_construct_filter(construct_tags) -> dict | None:
+    """
+    Turn a set/list of construct tags into a Chroma OR-filter over the
+    boolean `construct_*` metadata fields written at ingest time.
+
+    Returns None when there are no tags, so the caller falls back to an
+    unfiltered search. An OR (not AND) is used so a document qualifies by
+    sharing ANY target construct, which keeps recall high.
+    """
+    if not construct_tags:
+        return None
+
+    clauses = [{f"construct_{t}": True} for t in sorted(set(construct_tags))]
+    if len(clauses) == 1:
+        return clauses[0]
+    return {"$or": clauses}
+
+
 def retrieve_for_generation(
     query: str,
     fetch_k: int = 32,
     mmr_k: int = 16,
     lambda_mult: float = 0.5,
     top_n: int = 3,
+    construct_tags=None,
 ) -> List[Document]:
     """
     Future-proof retriever that:
@@ -95,18 +113,35 @@ def retrieve_for_generation(
       2. Reranks those candidates with a CrossEncoder.
       3. Returns the best `top_n` documents.
 
+    `construct_tags` is OPTIONAL and backward-compatible:
+      - None (default): behaves exactly as before -- plain MMR, no filtering.
+        All existing callers (Lens describe/explain/etc.) hit this path
+        unchanged.
+      - a set/list of tags: restrict MMR to exercises whose `construct_*`
+        boolean metadata matches ANY tag. If that filtered search returns
+        nothing, fall back to the unfiltered search so generation is never
+        starved.
+
     No langchain.retrievers or langchain-classic.
     """
     vectordb = load_vectorstore()
 
+    where = _build_construct_filter(construct_tags)
+
     # Step 1: MMR candidate retrieval from Chroma
     # This approximates your old base_retriever with search_type="mmr"
-    candidates = vectordb.max_marginal_relevance_search(
-        query,
-        k=mmr_k,  # how many docs we keep before reranking
-        fetch_k=fetch_k,  # pool for diversity
-        lambda_mult=lambda_mult,
-    )
+    def _mmr(filter_arg):
+        kwargs = dict(k=mmr_k, fetch_k=fetch_k, lambda_mult=lambda_mult)
+        if filter_arg is not None:
+            kwargs["filter"] = filter_arg
+        return vectordb.max_marginal_relevance_search(query, **kwargs)
+
+    candidates = _mmr(where)
+
+    # Fallback: if the construct filter matched nothing, retry unfiltered
+    # so the generator always gets some context.
+    if not candidates and where is not None:
+        candidates = _mmr(None)
 
     if not candidates:
         return []

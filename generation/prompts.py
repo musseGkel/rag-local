@@ -8,6 +8,26 @@ import json
 from sqlexercise.difficulty_level import DifficultyLevel
 from sqlerrors import SqlErrors
 from generation.constraint_repo import get_constraints
+from generation.construct_tags import constraints_to_constructs
+
+# How each construct tag reads as a natural-language hint inside the
+# retrieval query. Phrases (not bare keywords) keep the query close to the
+# request+SQL text the exercises are embedded as.
+_CONSTRUCT_PHRASES = {
+    "join": "joining multiple tables",
+    "left_join": "using an outer join",
+    "right_join": "using an outer join",
+    "self_join": "joining a table to itself",
+    "group_by": "grouping rows",
+    "having": "filtering groups with a condition",
+    "order_by": "ordering the results",
+    "aggregation": "computing an aggregate such as a count or sum",
+    "subquery": "using a subquery",
+    "distinct": "returning distinct rows",
+    "union": "combining results with a union",
+    "exists": "testing for the existence of related rows",
+    "in_any_all": "comparing against a set of values",
+}
 
 # Load the Miedema dataset schema (smallest, good for testing)
 _DATASETS_PATH = os.path.join(os.path.dirname(__file__), "..", "datasets")
@@ -104,9 +124,23 @@ def build_generation_lens_prompt(
         "HARD": "a more involved query combining several tables, grouping, and aggregation",
     }.get(difficulty.name, "a database query retrieving specific information")
 
+    # Derive the structural constructs this (error, difficulty) should exhibit,
+    # and turn them into natural-language phrases. This makes retrieval
+    # error-aware: previously every error at the same difficulty retrieved the
+    # same neighbors, because the error never reached the retrieval query.
+    constructs = constraints_to_constructs(error, difficulty, language)
+    construct_phrases = [
+        _CONSTRUCT_PHRASES[t] for t in sorted(constructs) if t in _CONSTRUCT_PHRASES
+    ]
+    construct_hint = (
+        f" The query involves {', '.join(construct_phrases)}."
+        if construct_phrases
+        else ""
+    )
+
     retrieval_query = (
         f"university database exercise: find specific information with "
-        f"{difficulty_hint}. Example request and SQL solution."
+        f"{difficulty_hint}.{construct_hint} Example request and SQL solution."
     )
 
     return LensPrompt(
@@ -114,6 +148,7 @@ def build_generation_lens_prompt(
         retrieval_query=retrieval_query,
         generation_query=prompt_text,
         language=language,
+        construct_tags=frozenset(constructs),
     )
 
 

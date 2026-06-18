@@ -69,40 +69,52 @@ def coerce_metadata(md: dict) -> dict:
 def detect_constructs(sql: str) -> List[str]:
     """
     Lightweight SQL construct detection.
-    Used as a retrieval tag so generation can fetch examples by construct.
+
+    Emits tags from the SHARED vocabulary (see generation/construct_tags.py),
+    so that exercises tagged here can be matched by the constraint-derived
+    tags produced at query time. Any join variant also emits the generic
+    "join" tag, mirroring constraints_to_constructs().
     """
     if not sql:
         return []
     T = sql.upper()
-    found = []
+    found = set()
 
-    checks = {
-        "join": " JOIN " in T,
-        "left_join": "LEFT JOIN" in T,
-        "outer_join": "OUTER JOIN" in T,
-        "natural_join": "NATURAL JOIN" in T,
-        "group_by": "GROUP BY" in T,
-        "having": "HAVING" in T,
-        "order_by": "ORDER BY" in T,
-        "subquery": T.count("SELECT") > 1,
-        "not_in": "NOT IN" in T,
-        "in_predicate": " IN (" in T,
-        "exists": "EXISTS" in T,
-        "not_exists": "NOT EXISTS" in T,
-        "all_quantifier": "ALL (" in T,
-        "distinct": "DISTINCT" in T,
-        "aggregation": any(f in T for f in ["COUNT(", "SUM(", "AVG(", "MIN(", "MAX("]),
-        "cte": T.strip().startswith("WITH ") or "\nWITH " in T,
-        "union": "UNION" in T,
-        "is_null": "IS NULL" in T,
-        "is_not_null": "IS NOT NULL" in T,
-    }
+    has_left = "LEFT JOIN" in T
+    has_right = "RIGHT JOIN" in T
+    has_any_join = " JOIN " in T or "OUTER JOIN" in T or "NATURAL JOIN" in T
 
-    for name, condition in checks.items():
-        if condition:
-            found.append(name)
+    if has_left:
+        found.add("left_join")
+    if has_right:
+        found.add("right_join")
+    # Crude self-join hint: same table aliased twice is hard to detect by
+    # string alone, so we leave self_join to be conservative (omitted here).
+    if has_any_join or has_left or has_right:
+        found.add("join")
 
-    return found
+    if "GROUP BY" in T:
+        found.add("group_by")
+    if "HAVING" in T:
+        found.add("having")
+    if "ORDER BY" in T:
+        found.add("order_by")
+    if T.count("SELECT") > 1:
+        found.add("subquery")
+    if "EXISTS" in T:
+        found.add("exists")
+    if any(
+        p in T for p in [" IN (", "= ANY", "= ALL", "> ALL", "< ALL", "> ANY", "< ANY"]
+    ):
+        found.add("in_any_all")
+    if "DISTINCT" in T:
+        found.add("distinct")
+    if any(f in T for f in ["COUNT(", "SUM(", "AVG(", "MIN(", "MAX("]):
+        found.add("aggregation")
+    if "UNION" in T:
+        found.add("union")
+
+    return sorted(found)
 
 
 def read_exercises_from_json(json_path: Path) -> List[Document]:
@@ -141,6 +153,11 @@ def read_exercises_from_json(json_path: Path) -> List[Document]:
         # page_content = what gets embedded and searched
         content = f"[REQUEST]\n{request}\n\n" f"[SQL SOLUTION]\n{primary_sql}"
 
+        # One boolean field per detected construct, e.g. construct_join=True.
+        # Chroma can filter exactly on booleans (it cannot reliably filter
+        # inside the legacy comma-joined "constructs" string).
+        construct_flags = {f"construct_{c}": True for c in constructs}
+
         meta = {
             "doc_type": "exercise",
             "dataset_name": dataset_name,
@@ -150,7 +167,8 @@ def read_exercises_from_json(json_path: Path) -> List[Document]:
             "verified": bool(ex.get("verified", True)),
             "has_solution": True,
             "num_solutions": len(solutions),
-            "constructs": constructs,  # list -> coerced to comma string
+            "constructs": constructs,  # legacy comma string, kept for reference
+            **construct_flags,  # new boolean fields used by the filter
             "all_solutions": solutions,  # list -> coerced to comma string
             "source_path": str(json_path),
         }

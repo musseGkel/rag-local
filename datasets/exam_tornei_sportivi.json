@@ -1,0 +1,59 @@
+{
+  "dataset_str": "BEGIN TRANSACTION;\n\ndrop schema if exists \"tornei_sportivi\" cascade;\n\ncreate schema \"tornei_sportivi\";\nset search_path to \"tornei_sportivi\";\n\nCREATE TABLE SQUADRA (\n    IdSq VARCHAR(50) PRIMARY KEY,\n    NomeS VARCHAR(255),\n    Zona VARCHAR(100),\n    AnnoF INTEGER\n);\n\nCREATE TABLE GIOCATORE (\n    IdG VARCHAR(50) PRIMARY KEY,\n    Nome VARCHAR(255),\n    Cognome VARCHAR(255),\n    AnnoN INTEGER,\n    RuoloG VARCHAR(100)\n);\n\nCREATE TABLE ARBITRO (\n    IdA VARCHAR(50) PRIMARY KEY,\n    Nome VARCHAR(255),\n    Cognome VARCHAR(255),\n    AnnoN INTEGER,\n    Note VARCHAR(255),\n    Punteggio INTEGER\n);\n\nCREATE TABLE TORNEO (\n    IdT VARCHAR(50) PRIMARY KEY,\n    NomeT VARCHAR(255),\n    AnnoEdizione INTEGER,\n    Sede VARCHAR(255),\n    Descrizione VARCHAR(255)\n);\n\nCREATE TABLE PARTECIPAZIONE (\n    IdSq VARCHAR(50) REFERENCES SQUADRA(IdSq),\n    IdT VARCHAR(50) REFERENCES TORNEO(IdT),\n    Girone VARCHAR(100),\n    Note VARCHAR(255),\n    PRIMARY KEY (IdSq, IdT)\n);\n\nCREATE TABLE PARTITA (\n    NumP VARCHAR(50),\n    IdT VARCHAR(50) REFERENCES TORNEO(IdT),\n    SqA VARCHAR(50) REFERENCES SQUADRA(IdSq),\n    SqB VARCHAR(50) REFERENCES SQUADRA(IdSq),\n    Fase VARCHAR(100),\n    Girone VARCHAR(100),\n    Data DATE,\n    Campo VARCHAR(100),\n    IdA VARCHAR(50) REFERENCES ARBITRO(IdA),\n    PRIMARY KEY (NumP),\n    UNIQUE (IdT, SqA, SqB, Fase),\n    UNIQUE (SqA, Data),\n    UNIQUE (SqB, Data),\n    UNIQUE (IdA, Data)\n);\n\nCREATE TABLE EVENTO (\n    NumP VARCHAR(50) REFERENCES PARTITA(NumP),\n    NumE VARCHAR(50),\n    IdSq VARCHAR(50) REFERENCES SQUADRA(IdSq),\n    TipoE VARCHAR(100),\n    Minuto INTEGER,\n    PRIMARY KEY (NumP, NumE)\n);\n\nCREATE TABLE APPARTIENE (\n    IdG VARCHAR(50) REFERENCES GIOCATORE(IdG),\n    IdT VARCHAR(50) REFERENCES TORNEO(IdT),\n    IdSq VARCHAR(50) REFERENCES SQUADRA(IdSq),\n    PRIMARY KEY (IdG, IdT, IdSq)\n);\n\nCREATE TABLE COINVOLGE (\n    IdG VARCHAR(50) REFERENCES GIOCATORE(IdG),\n    NumP VARCHAR(50),\n    NumE VARCHAR(50),\n    Ruolo VARCHAR(100),\n    PRIMARY KEY (IdG, NumP, NumE),\n    FOREIGN KEY (NumP, NumE) REFERENCES EVENTO(NumP, NumE)\n);\n\n-- No INSERT statements (exam PDF source, no data instances provided)\n\nCOMMIT;",
+  "dbms": "postgresql",
+  "description": "Exam exercises on a team sports tournaments domain. Schema covers teams, players, referees, tournaments, participations, matches, events and player involvement.",
+  "domain": "team sports tournaments",
+  "source": "exam_pdf",
+  "exercises": [
+    {
+      "title": "Exercise 1",
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "verified": true,
+      "request": "Determinare id, nome e cognome dei giocatori con ruolo 'attaccante' che hanno partecipato ad almeno un torneo e non hanno mai segnato (cioè non esistono eventi di tipo 'goal' che li coinvolgono con ruolo 'marcatore').",
+      "solutions": [
+        "SELECT DISTINCT IdG, Nome, Cognome\nFROM GIOCATORE NATURAL JOIN APPARTIENE\nWHERE RuoloG = 'attaccante' AND IdG NOT IN\n    (SELECT IdG FROM EVENTO NATURAL JOIN COINVOLGE\n     WHERE Ruolo = 'marcatore' AND TipoE = 'goal');"
+      ]
+    },
+    {
+      "title": "Exercise 2",
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "verified": true,
+      "request": "Determinare il marcatore dell'ultimo goal segnato nella finale del torneo interfacoltà di calcio a 6 edizione 2026 (ignorare eventuali autogoal).",
+      "solutions": [
+        "WITH TMP AS (\n    SELECT DISTINCT IdG, Minuto\n    FROM EVENTO NATURAL JOIN COINVOLGE NATURAL JOIN PARTITA NATURAL JOIN TORNEO\n    WHERE Ruolo = 'marcatore' AND TipoE = 'goal' AND\n        NomeT = 'interfacoltà di calcio a 6' AND AnnoEdizione = 2026\n        AND Fase = 'finale'\n)\nSELECT IdG FROM TMP\nWHERE Minuto = (SELECT MAX(Minuto) FROM TMP);"
+      ]
+    },
+    {
+      "title": "Exercise 3",
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "verified": true,
+      "request": "Determinare il nome delle squadre che hanno partecipato ad almeno un torneo e non sono mai arrivate alla fase finale di un torneo.",
+      "solutions": [
+        "SELECT DISTINCT NomeS\nFROM SQUADRA NATURAL JOIN PARTECIPAZIONE\nWHERE IdSq NOT IN\n    (SELECT SqA FROM PARTITA WHERE Fase = 'finale'\n     UNION\n     SELECT SqB FROM PARTITA WHERE Fase = 'finale');"
+      ]
+    },
+    {
+      "title": "Exercise 4",
+      "difficulty": null,
+      "error": null,
+      "is_hidden": false,
+      "learning_objectives": [],
+      "verified": true,
+      "request": "Determinare il portiere più giovane tra i partecipanti al torneo interfacoltà di calcio a 6 edizione 2026.",
+      "solutions": [
+        "WITH TMP AS (\n    SELECT DISTINCT IdG, AnnoN\n    FROM GIOCATORE NATURAL JOIN APPARTIENE NATURAL JOIN TORNEO\n    WHERE RuoloG = 'portiere' AND NomeT = 'interfacoltà di calcio a 6'\n        AND AnnoEdizione = 2026\n)\nSELECT IdG FROM TMP\nWHERE AnnoN = (SELECT MAX(AnnoN) FROM TMP);"
+      ]
+    }
+  ],
+  "search_path": "tornei_sportivi",
+  "title": "Exam: Tornei Sportivi a Squadre"
+}

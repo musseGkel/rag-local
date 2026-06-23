@@ -36,6 +36,11 @@ class LensPrompt:
     # retrieve_for_generation to filter exercise examples. None for all Lens
     # modes (describe/explain/etc.), which leaves retrieval unfiltered.
     construct_tags: Optional[frozenset] = None
+    # Optional structural construct tags that examples must NOT contain. Used
+    # only by retrieve_for_generation to add negative metadata clauses, pushing
+    # out examples that demonstrate a construct this exercise forbids (e.g. a
+    # subquery example for a NoSubquery exercise). None for all Lens modes.
+    forbidden_construct_tags: Optional[frozenset] = None
 
 
 # =========================

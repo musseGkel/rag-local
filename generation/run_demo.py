@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 
 os.environ.setdefault("OPENAI_API_KEY", "dummy")
@@ -12,6 +13,52 @@ from generation.prompts import build_generation_lens_prompt
 from generator_phi3_server import rag_answer
 from generation.validator import validate_sql
 from generation.prompts import build_generation_lens_prompt, build_rewrite_lens_prompt
+
+
+def build_retry_hints(violations: list[str]) -> str:
+    """
+    Turn validator violation messages into concrete, violation-specific
+    instructions for the model. Each branch matches the package's wording
+    and appends one targeted fix. Returns a leading-space string ready to
+    append after the generic 'rewrite' sentence, or '' if nothing matched.
+
+    NOTE: matching is heuristic on the package's message text. If the
+    wording in sqlexercise changes, these checks may silently stop firing;
+    keep them loose and lowercase where possible.
+    """
+    hints: list[str] = []
+
+    for v in violations:
+        # Table count - range-aware: read the max from the message rather
+        # than hardcoding, so '0 to 1', '1 to 2', etc. all work.
+        m = re.search(r"range of \d+ to (\d+) tables", v)
+        if m:
+            max_tables = m.group(1)
+            if max_tables == "1":
+                hints.append(
+                    "Use only ONE table. Do not join; read from a single table."
+                )
+            else:
+                hints.append(f"Use AT MOST {max_tables} tables. Drop the extra joins.")
+
+        # Subquery
+        if "subquer" in v.lower():
+            hints.append("Remove the subquery entirely. Do not use any nested SELECT.")
+
+        # Zero WHERE conditions (exercise must have no filtering at all)
+        if "between 0 and 0 comparisons" in v:
+            hints.append(
+                "Do NOT use a WHERE clause at all. Return all rows, no filtering."
+            )
+
+        # Multiple conditions on the SAME column (a range on one column)
+        if "conditions on the same column" in v:
+            hints.append(
+                "Put TWO conditions on the SAME column, "
+                "e.g. WHERE voto >= 18 AND voto <= 30."
+            )
+
+    return (" " + " ".join(hints)) if hints else ""
 
 
 def generate_exercise(
@@ -38,17 +85,18 @@ def generate_exercise(
         # If previous attempt had violations, feed back its own SQL + the rules.
         if attempt > 1 and violations:
             violation_text = "\n".join(f"- {v}" for v in violations)
+            # Violation-specific hints (table count, subquery, 0-WHERE, same-column).
+            hint_text = build_retry_hints(violations)
             prompt.generation_query = (
                 f"Your previous SQL was:\n{last_sql}\n\n"
                 f"It failed these constraints:\n{violation_text}\n\n"
-                f"Rewrite the SQL so it satisfies every constraint. "
-                f"Keep the same tables; only adjust the query to fix the violations.\n\n"
+                f"Rewrite the SQL so it satisfies every constraint.{hint_text}\n\n"
                 + prompt.generation_query
             )
             # Vary retrieval on retries so we don't pull the same neighbors every time.
             prompt.retrieval_query = f"{prompt.retrieval_query} {last_sql}"
 
-        # ── DEBUG: show retrieval and full context ──────────────────────
+        # -- DEBUG: show retrieval and full context ----------------------
         from retriever_reranker_server import retrieve_for_generation
         from generator_phi3_server import build_context
 
@@ -82,7 +130,7 @@ def generate_exercise(
         print("  " + "=" * 50)
         print(prompt.generation_query)
         print("  " + "=" * 50 + "\n")
-        # ── END DEBUG ───────────────────────────────────────────────────
+        # -- END DEBUG ---------------------------------------------------
 
         raw_output = rag_answer(prompt)
 
@@ -131,7 +179,7 @@ def generate_exercise(
                 "violations": [],
             }
 
-        # Failed — print violations
+        # Failed - print violations
         print(f"  Failed with {len(violations)} violation(s):")
         for v in violations:
             print(f"    - {v}")

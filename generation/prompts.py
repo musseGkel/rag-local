@@ -8,7 +8,10 @@ import json
 from sqlexercise.difficulty_level import DifficultyLevel
 from sqlerrors import SqlErrors
 from generation.constraint_repo import get_constraints
-from generation.construct_tags import constraints_to_constructs
+from generation.construct_tags import (
+    constraints_to_constructs,
+    constraints_to_forbidden_constructs,
+)
 
 # How each construct tag reads as a natural-language hint inside the
 # retrieval query. Phrases (not bare keywords) keep the query close to the
@@ -31,6 +34,15 @@ _CONSTRUCT_PHRASES = {
 
 # Load the Miedema dataset schema (smallest, good for testing)
 _DATASETS_PATH = os.path.join(os.path.dirname(__file__), "..", "datasets")
+
+_LANG_NAMES = {
+    "en": "English",
+    "it": "Italian",
+}
+
+
+def _lang_name(language: str) -> str:
+    return _LANG_NAMES.get(language.strip().lower(), language)
 
 
 def load_schema(dataset_name: str = "miedema") -> str:
@@ -62,6 +74,8 @@ def build_generation_prompt(
     dataset_extra = constraints["dataset_extra"].strip()
     exercise_extra = constraints["exercise_extra"].strip()
 
+    lang_name = _lang_name(language)
+
     prompt = f"""You are a SQL exercise generator for a university database course.
 
 Your task is to generate ONE SQL exercise using the schema below.
@@ -69,6 +83,9 @@ The exercise must consist of:
 1. A natural language REQUEST that describes what data the student needs to retrieve.
 2. A SQL SOLUTION that correctly answers the request.
 
+IMPORTANT: Write the natural language REQUEST in {lang_name}. The SQL solution must remain standard SQL (keywords and identifiers unchanged).
+
+---
 The request should be written at a conceptual level — do NOT hint at the SQL solution strategy.
 The request must clearly specify what columns or values should be returned.
 
@@ -129,6 +146,11 @@ def build_generation_lens_prompt(
     # error-aware: previously every error at the same difficulty retrieved the
     # same neighbors, because the error never reached the retrieval query.
     constructs = constraints_to_constructs(error, difficulty, language)
+    # Forbidden constructs: examples demonstrating these are filtered OUT at
+    # retrieval time. A construct is never both required and forbidden, but we
+    # subtract defensively so a positive tag always wins over a negative one.
+    forbidden = constraints_to_forbidden_constructs(error, difficulty, language)
+    forbidden = forbidden - constructs
     construct_phrases = [
         _CONSTRUCT_PHRASES[t] for t in sorted(constructs) if t in _CONSTRUCT_PHRASES
     ]
@@ -149,6 +171,7 @@ def build_generation_lens_prompt(
         generation_query=prompt_text,
         language=language,
         construct_tags=frozenset(constructs),
+        forbidden_construct_tags=frozenset(forbidden),
     )
 
 
@@ -162,6 +185,8 @@ def build_rewrite_lens_prompt(
     to accurately describe what the SQL actually does.
     """
 
+    lang_name = _lang_name(language)
+
     prompt_text = f"""You are a SQL exercise editor for a university database course.
 
 Below is a SQL query and a natural language request that was written to describe it.
@@ -172,6 +197,7 @@ Your job is to rewrite the request so that it:
 2. Does NOT hint at the SQL solution strategy (no mention of JOIN, WHERE, GROUP BY, etc.)
 3. Clearly specifies what columns or values should be returned
 4. Is written at a conceptual level, as if asking a student to find some information
+5. Is written in {lang_name}
 
 ---
 SQL QUERY:

@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 from typing import List
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
@@ -11,7 +11,11 @@ from langchain_core.documents import Document
 from sql_error_categorizer import DetectedError, SqlErrors
 
 # retriever (MMR + CrossEncoder) to get relevant docs for generation
-from retriever_reranker_server import retrieve_for_generation
+from retriever_reranker_server import (
+    retrieve_for_generation,
+    KB_COLLECTION,
+    EX_COLLECTION,
+)
 
 # Hugging Face model id (matches cached folder models--microsoft--phi-4-mini-instruct)
 MODEL_ID = os.getenv("GEN_MODEL", "microsoft/phi-4-mini-instruct")
@@ -161,10 +165,22 @@ def sanitize_answer(text: str) -> str:
 
 
 def rag_answer(prompt: LensPrompt) -> str:
-    use_rag = prompt.mode not in {"describe_query", "explain_query"}
+    if prompt.mode == "generate_exercise":
+        docs = retrieve_for_generation(
+            prompt.retrieval_query,
+            collection=EX_COLLECTION,
+            construct_tags=getattr(prompt, "construct_tags", None),
+            forbidden_construct_tags=getattr(prompt, "forbidden_construct_tags", None),
+        )
+    elif prompt.mode in {"describe_query", "explain_query"}:
+        docs = []  # no RAG, as today
+    else:
+        docs = retrieve_for_generation(
+            prompt.retrieval_query,
+            collection=KB_COLLECTION,
+        )
 
-    docs = retrieve_for_generation(prompt.retrieval_query) if use_rag else []
-    context = build_context(docs) if use_rag else ""
+    context = build_context(docs) if docs else ""
 
     # generation uses prompt.generation_query
     messages = build_messages(prompt, context)
@@ -177,7 +193,7 @@ def rag_answer(prompt: LensPrompt) -> str:
     )
     # answer = sanitize_answer(answer)
 
-    if not use_rag or not docs:
+    if not docs:
         return answer
 
     # # compact sources list
@@ -263,38 +279,38 @@ def rag_answer(prompt: LensPrompt) -> str:
 
 #     elif mode == "locate_error_cause_v2":
 #         user_sql = """
-        SELECT B.Matricola
-        FROM (
-        SELECT S.Matricola
-        FROM Studenti S
-        JOIN CorsiDiLaurea CDL
-            ON S.CorsoDiLaurea = CDL.id
-        AND CDL.Denominazione = 'Informatica'
-        JOIN Corsi C
-            ON C.CorsoDiLaurea = CDL.id
-        JOIN Esami E
-            ON E.Corso = C.id
-        AND C.id = 'bdd1n'
-        AND E.Studente = S.Matricola
-        WHERE EXTRACT(MONTH FROM E.Data) = 06
-            AND EXTRACT(YEAR FROM E.Data) =
-        ) AS B
-        JOIN (
-        SELECT S2.Matricola
-        FROM Studenti S2
-        JOIN CorsiDiLaurea CDL2
-            ON S2.CorsoDiLaurea = CDL2.id
-        AND CDL2.Denominazione = 'Informatica'
-        JOIN Corsi C2
-            ON C2.CorsoDiLaurea = CDL2.id
-        JOIN Esami E2
-            ON E2.Corso = C2.id
-        AND C2.id = 'ig'
-        AND E2.Studente = S2.Matricola
-        WHERE EXTRACT(MONTH FROM E2.Data) = 06
-            AND EXTRACT(YEAR FROM E2.Data) = 2010
-        ) AS I
-        ON B.Matricola = I.Matricola;
+# SELECT B.Matricola
+# FROM (
+# SELECT S.Matricola
+# FROM Studenti S
+# JOIN CorsiDiLaurea CDL
+#     ON S.CorsoDiLaurea = CDL.id
+# AND CDL.Denominazione = 'Informatica'
+# JOIN Corsi C
+#     ON C.CorsoDiLaurea = CDL.id
+# JOIN Esami E
+#     ON E.Corso = C.id
+# AND C.id = 'bdd1n'
+# AND E.Studente = S.Matricola
+# WHERE EXTRACT(MONTH FROM E.Data) = 06
+#     AND EXTRACT(YEAR FROM E.Data) =
+# ) AS B
+# JOIN (
+# SELECT S2.Matricola
+# FROM Studenti S2
+# JOIN CorsiDiLaurea CDL2
+#     ON S2.CorsoDiLaurea = CDL2.id
+# AND CDL2.Denominazione = 'Informatica'
+# JOIN Corsi C2
+#     ON C2.CorsoDiLaurea = CDL2.id
+# JOIN Esami E2
+#     ON E2.Corso = C2.id
+# AND C2.id = 'ig'
+# AND E2.Studente = S2.Matricola
+# WHERE EXTRACT(MONTH FROM E2.Data) = 06
+#     AND EXTRACT(YEAR FROM E2.Data) = 2010
+# ) AS I
+# ON B.Matricola = I.Matricola;
 #         """
 #         prompt = locate_error_cause(
 #             code=user_sql,

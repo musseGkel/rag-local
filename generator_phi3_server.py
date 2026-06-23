@@ -159,6 +159,7 @@ def rag_answer(prompt: LensPrompt) -> str:
         retrieve_for_generation(
             prompt.retrieval_query,
             construct_tags=getattr(prompt, "construct_tags", None),
+            forbidden_construct_tags=getattr(prompt, "forbidden_construct_tags", None),
         )
         if use_rag
         else []

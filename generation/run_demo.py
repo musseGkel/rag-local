@@ -9,10 +9,10 @@ sys.path.insert(0, "/opt/rag")
 from sqlerrors import SqlErrors
 from sqlexercise.difficulty_level import DifficultyLevel
 
-from generation.prompts import build_generation_lens_prompt
-from generator_phi3_server import rag_answer
+from generator_phi3_server_v2 import rag_answer, build_context
 from generation.validator import validate_sql
 from generation.prompts import build_generation_lens_prompt, build_rewrite_lens_prompt
+from retriever_reranker_server import retrieve_for_generation, EX_COLLECTION
 
 
 def build_retry_hints(violations: list[str]) -> str:
@@ -96,19 +96,21 @@ def generate_exercise(
             # Vary retrieval on retries so we don't pull the same neighbors every time.
             prompt.retrieval_query = f"{prompt.retrieval_query} {last_sql}"
 
-        # -- DEBUG: show retrieval and full context ----------------------
-        from retriever_reranker_server import retrieve_for_generation
-        from generator_phi3_server import build_context
-
         debug_tags = getattr(prompt, "construct_tags", None)
+        debug_forbidden = getattr(prompt, "forbidden_construct_tags", None)
         docs = retrieve_for_generation(
             prompt.retrieval_query,
             construct_tags=debug_tags,
+            forbidden_construct_tags=debug_forbidden,
+            collection=EX_COLLECTION,
         )
 
         print(f"\n  [DEBUG] Retrieval query: {prompt.retrieval_query}")
         print(
             f"  [DEBUG] Construct tags (filter): {sorted(debug_tags) if debug_tags else None}"
+        )
+        print(
+            f"  [DEBUG] Forbidden tags (filter): {sorted(debug_forbidden) if debug_forbidden else None}"
         )
         print(f"  [DEBUG] Retrieved {len(docs)} doc(s):")
         for d in docs:

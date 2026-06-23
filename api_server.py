@@ -2,6 +2,19 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 import os
 
+import torch
+
+print(
+    "count:",
+    torch.cuda.device_count(),
+    "visible:",
+    os.environ.get("CUDA_VISIBLE_DEVICES"),
+    "order:",
+    os.environ.get("CUDA_DEVICE_ORDER"),
+    "name:",
+    torch.cuda.get_device_name(0),
+)
+
 # import your generators
 from generator_phi3_server_v2 import rag_answer as phi3_answer
 from generator_deepseek_v2 import rag_answer as deepseek_answer

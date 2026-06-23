@@ -20,10 +20,12 @@ from sentence_transformers import CrossEncoder
 ROOT = Path(os.getenv("ROOT", "/opt/rag"))
 DB_DIR = ROOT / "db"
 EMBED_MODEL = os.getenv("EMBED_MODEL", "BAAI/bge-small-en-v1.5")
-COLLECTION = "sqlex"
+KB_COLLECTION = "sqlkb"  # taxonomy + textbooks (Lens grounding)
+EX_COLLECTION = "sqlex"  # exercise pairs (exercise generation)
+DEFAULT_COLLECTION = EX_COLLECTION  # keep current default
 
 
-def load_vectorstore() -> Chroma:
+def load_vectorstore(collection: str = DEFAULT_COLLECTION) -> Chroma:
     """
     Load the persistent Chroma collection using the same embedding model
     and settings as during ingest.
@@ -36,9 +38,7 @@ def load_vectorstore() -> Chroma:
     )
 
     return Chroma(
-        client=client,
-        collection_name=COLLECTION,
-        embedding_function=embeddings,
+        client=client, collection_name=collection, embedding_function=embeddings
     )
 
 
@@ -81,22 +81,45 @@ def _get_reranker() -> CrossEncoder:
     return _reranker_model
 
 
-def _build_construct_filter(construct_tags) -> dict | None:
+def _build_construct_filter(construct_tags, forbidden_tags=None) -> dict | None:
     """
-    Turn a set/list of construct tags into a Chroma OR-filter over the
-    boolean `construct_*` metadata fields written at ingest time.
+    Build a Chroma metadata filter from required and forbidden construct tags,
+    over the boolean `construct_*` fields written at ingest time.
 
-    Returns None when there are no tags, so the caller falls back to an
-    unfiltered search. An OR (not AND) is used so a document qualifies by
-    sharing ANY target construct, which keeps recall high.
+    Required tags (OR): a document qualifies by sharing ANY required construct,
+    which keeps recall high. Built as {"$or": [{construct_x: True}, ...]}.
+
+    Forbidden tags (AND of negatives): a document is excluded if it has ANY
+    forbidden construct. Because ingest writes `construct_x: True` ONLY when the
+    construct is present (absent constructs have no key at all), a plain
+    {"construct_x": {"$ne": True}} would also drop documents that simply lack
+    the key. Chroma's `$ne` matches records where the field is absent OR not
+    equal, which is exactly what we want here: keep docs where the construct is
+    absent, drop docs where it is True. Each forbidden tag becomes
+    {"construct_x": {"$ne": True}}, and all are AND-ed.
+
+    Returns None when there is nothing to filter on, so the caller falls back to
+    an unfiltered search.
     """
-    if not construct_tags:
+    required = sorted(set(construct_tags)) if construct_tags else []
+    forbidden = sorted(set(forbidden_tags)) if forbidden_tags else []
+    # A tag should never be both; if it somehow is, requiring it wins.
+    forbidden = [t for t in forbidden if t not in required]
+
+    clauses: list[dict] = []
+
+    if required:
+        pos = [{f"construct_{t}": True} for t in required]
+        clauses.append(pos[0] if len(pos) == 1 else {"$or": pos})
+
+    for t in forbidden:
+        clauses.append({f"construct_{t}": {"$ne": True}})
+
+    if not clauses:
         return None
-
-    clauses = [{f"construct_{t}": True} for t in sorted(set(construct_tags))]
     if len(clauses) == 1:
         return clauses[0]
-    return {"$or": clauses}
+    return {"$and": clauses}
 
 
 def retrieve_for_generation(
@@ -106,6 +129,8 @@ def retrieve_for_generation(
     lambda_mult: float = 0.5,
     top_n: int = 3,
     construct_tags=None,
+    forbidden_construct_tags=None,
+    collection: str = DEFAULT_COLLECTION,
 ) -> List[Document]:
     """
     Future-proof retriever that:
@@ -113,35 +138,43 @@ def retrieve_for_generation(
       2. Reranks those candidates with a CrossEncoder.
       3. Returns the best `top_n` documents.
 
-    `construct_tags` is OPTIONAL and backward-compatible:
-      - None (default): behaves exactly as before -- plain MMR, no filtering.
-        All existing callers (Lens describe/explain/etc.) hit this path
-        unchanged.
-      - a set/list of tags: restrict MMR to exercises whose `construct_*`
-        boolean metadata matches ANY tag. If that filtered search returns
-        nothing, fall back to the unfiltered search so generation is never
-        starved.
+    `construct_tags` / `forbidden_construct_tags` are OPTIONAL and
+    backward-compatible:
+      - Both None (default): plain MMR, no filtering. All existing callers
+        (Lens describe/explain/etc.) hit this path unchanged.
+      - construct_tags set: restrict to exercises whose `construct_*` metadata
+        matches ANY required tag.
+      - forbidden_construct_tags set: additionally exclude exercises that
+        demonstrate ANY forbidden construct.
 
-    No langchain.retrievers or langchain-classic.
+    To avoid starving generation when filters are strict, retrieval degrades
+    gracefully: (1) required + forbidden, then (2) required only, then
+    (3) forbidden only, then (4) unfiltered. The first non-empty result wins.
     """
-    vectordb = load_vectorstore()
+    vectordb = load_vectorstore(collection=collection)
 
-    where = _build_construct_filter(construct_tags)
-
-    # Step 1: MMR candidate retrieval from Chroma
-    # This approximates your old base_retriever with search_type="mmr"
     def _mmr(filter_arg):
         kwargs = dict(k=mmr_k, fetch_k=fetch_k, lambda_mult=lambda_mult)
         if filter_arg is not None:
             kwargs["filter"] = filter_arg
         return vectordb.max_marginal_relevance_search(query, **kwargs)
 
-    candidates = _mmr(where)
+    # Build the staged filters once, skipping any that are None or duplicates.
+    full = _build_construct_filter(construct_tags, forbidden_construct_tags)
+    pos_only = _build_construct_filter(construct_tags, None)
+    neg_only = _build_construct_filter(None, forbidden_construct_tags)
 
-    # Fallback: if the construct filter matched nothing, retry unfiltered
-    # so the generator always gets some context.
-    if not candidates and where is not None:
-        candidates = _mmr(None)
+    candidates: List[Document] = []
+    tried: list[dict | None] = []
+    for filt in (full, pos_only, neg_only, None):
+        # Skip filters we've already attempted (e.g. full == pos_only when
+        # there are no forbidden tags) to avoid redundant queries.
+        if any(filt == t for t in tried):
+            continue
+        tried.append(filt)
+        candidates = _mmr(filt)
+        if candidates:
+            break
 
     if not candidates:
         return []

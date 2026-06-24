@@ -59,6 +59,31 @@ def build_context(docs: List[Document]) -> str:
     return ctx
 
 
+# Toggle context debug prints via env var (default on). Set LENS_DEBUG_CONTEXT=0 to silence.
+DEBUG_CONTEXT = os.getenv("LENS_DEBUG_CONTEXT", "1") not in {"0", "false", "False"}
+
+
+def debug_print_context(prompt: LensPrompt, docs: List[Document], context: str) -> None:
+    if not DEBUG_CONTEXT:
+        return
+    print("\n" + "=" * 80)
+    print(f"[CONTEXT DEBUG] generator=phi3 | mode={prompt.mode} | lang={prompt.language}")
+    print(f"[CONTEXT DEBUG] retrieval_query: {prompt.retrieval_query}")
+    print(f"[CONTEXT DEBUG] retrieved docs: {len(docs)}")
+    for i, d in enumerate(docs, 1):
+        rid = d.metadata.get("resource_id", "")
+        sect = d.metadata.get("section", "")
+        loc = d.metadata.get("section_locator", "")
+        preview = (d.page_content or "").strip().replace("\n", " ")[:200]
+        print(f"  - doc {i}: rid={rid} | section={sect} | locator={loc}")
+        print(f"           preview: {preview}")
+    print(f"[CONTEXT DEBUG] assembled context chars: {len(context)}")
+    print("[CONTEXT DEBUG] --- full context start ---")
+    print(context if context else "<empty>")
+    print("[CONTEXT DEBUG] --- full context end ---")
+    print("=" * 80 + "\n")
+
+
 def build_messages(prompt: LensPrompt, context: str):
     messages = [{"role": "system", "content": LENS_SYSTEM_PROMPT}]
 
@@ -172,7 +197,7 @@ def rag_answer(prompt: LensPrompt) -> str:
             construct_tags=getattr(prompt, "construct_tags", None),
             forbidden_construct_tags=getattr(prompt, "forbidden_construct_tags", None),
         )
-    elif prompt.mode in {"describe_query", "explain_query"}:
+    elif prompt.mode in {"describe_my_query", "explain_my_query"}:
         docs = []  # no RAG, as today
     else:
         docs = retrieve_for_generation(
@@ -182,8 +207,16 @@ def rag_answer(prompt: LensPrompt) -> str:
 
     context = build_context(docs) if docs else ""
 
+    debug_print_context(prompt, docs, context)
+
     # generation uses prompt.generation_query
     messages = build_messages(prompt, context)
+
+    if DEBUG_CONTEXT:
+        print("[CONTEXT DEBUG] --- final messages sent to model ---")
+        for m in messages:
+            print(f"  [{m['role']}] {m['content']}")
+        print("[CONTEXT DEBUG] --- end final messages ---\n")
 
     answer = hf_chat_generate(
         messages,

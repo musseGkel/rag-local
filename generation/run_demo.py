@@ -9,10 +9,9 @@ sys.path.insert(0, "/opt/rag")
 from sqlerrors import SqlErrors
 from sqlexercise.difficulty_level import DifficultyLevel
 
-from generator_phi3_server_v2 import rag_answer, build_context
+from generator_phi3_server_v2 import rag_answer_with_docs, build_context, doc_sources
 from generation.validator import validate_sql
 from generation.prompts import build_generation_lens_prompt, build_rewrite_lens_prompt
-from retriever_reranker_server import retrieve_for_generation, EX_COLLECTION
 
 
 def build_retry_hints(violations: list[str]) -> str:
@@ -67,14 +66,24 @@ def generate_exercise(
     language: str = "en",
     dataset_name: str = "unicorsi",
     max_retries: int = 5,
+    use_rag: bool = True,
 ) -> dict:
     """
-    Generate one SQL exercise using the full RAG pipeline.
+    Generate one SQL exercise.
+
+    use_rag=True  -> retrieve similar exercises from the corpus and inject
+                     them as context (full RAG pipeline).
+    use_rag=False -> same prompt, validator and retry loop, but no retrieval
+                     (baseline for the RAG vs no-RAG comparison).
+
     Validates the output and retries with a fresh prompt if constraints are violated.
     """
 
     violations = []
     last_sql = ""  # remember the previous attempt's SQL for feedback
+    request = ""
+    sql = ""
+    docs = []
 
     for attempt in range(1, max_retries + 1):
         print(f"Attempt {attempt}/{max_retries}...")
@@ -96,15 +105,16 @@ def generate_exercise(
             # Vary retrieval on retries so we don't pull the same neighbors every time.
             prompt.retrieval_query = f"{prompt.retrieval_query} {last_sql}"
 
+        print(f"\n  [DEBUG] Full generation prompt (RAG {'ON' if use_rag else 'OFF'}):")
+        print("  " + "=" * 50)
+        print(prompt.generation_query)
+        print("  " + "=" * 50 + "\n")
+
+        # Single retrieval + generation call (retrieval skipped when use_rag=False).
+        raw_output, docs = rag_answer_with_docs(prompt, use_rag=use_rag)
+
         debug_tags = getattr(prompt, "construct_tags", None)
         debug_forbidden = getattr(prompt, "forbidden_construct_tags", None)
-        docs = retrieve_for_generation(
-            prompt.retrieval_query,
-            construct_tags=debug_tags,
-            forbidden_construct_tags=debug_forbidden,
-            collection=EX_COLLECTION,
-        )
-
         print(f"\n  [DEBUG] Retrieval query: {prompt.retrieval_query}")
         print(
             f"  [DEBUG] Construct tags (filter): {sorted(debug_tags) if debug_tags else None}"
@@ -125,16 +135,9 @@ def generate_exercise(
 
         print(f"\n  [DEBUG] RAG context injected into prompt:")
         print("  " + "-" * 50)
-        print(build_context(docs))
+        print(build_context(docs) if docs else "  <no context: RAG off>")
         print("  " + "-" * 50)
-
-        print(f"\n  [DEBUG] Full generation prompt:")
-        print("  " + "=" * 50)
-        print(prompt.generation_query)
-        print("  " + "=" * 50 + "\n")
         # -- END DEBUG ---------------------------------------------------
-
-        raw_output = rag_answer(prompt)
 
         # Parse the output
         request = ""
@@ -165,7 +168,7 @@ def generate_exercise(
             # Rewrite the request to accurately match the SQL
             print(f"  Rewriting request to match SQL...")
             rewrite_prompt = build_rewrite_lens_prompt(request, sql, language)
-            rewrite_output = rag_answer(rewrite_prompt)
+            rewrite_output, _ = rag_answer_with_docs(rewrite_prompt, use_rag=use_rag)
 
             if "<request>" in rewrite_output and "</request>" in rewrite_output:
                 rewritten_request = (
@@ -179,6 +182,8 @@ def generate_exercise(
                 "sql": sql,
                 "attempts": attempt,
                 "violations": [],
+                "use_rag": use_rag,
+                "sources": doc_sources(docs),
             }
 
         # Failed - print violations
@@ -193,6 +198,8 @@ def generate_exercise(
         "sql": sql,
         "attempts": max_retries,
         "violations": violations,
+        "use_rag": use_rag,
+        "sources": doc_sources(docs),
     }
 
 
@@ -202,7 +209,11 @@ if __name__ == "__main__":
 
     print(f"Generating exercise for: {error.name} | {difficulty.name}\n")
 
-    result = generate_exercise(error=error, difficulty=difficulty)
+    # USE_RAG=0 python -m generation.run_demo  -> baseline without retrieval
+    use_rag = os.getenv("USE_RAG", "1") not in {"0", "false", "False"}
+    print(f"RAG: {'ON' if use_rag else 'OFF'}")
+
+    result = generate_exercise(error=error, difficulty=difficulty, use_rag=use_rag)
 
     print("\nFINAL REQUEST:")
     print(result["request"])

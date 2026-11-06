@@ -11,7 +11,11 @@ from langchain_core.documents import Document
 from sql_error_categorizer import DetectedError, SqlErrors
 
 # retriever (MMR + CrossEncoder) to get relevant docs for generation
-from retriever_reranker_server import retrieve_for_generation
+from retriever_reranker_server import (
+    retrieve_for_generation,
+    KB_COLLECTION,
+    EX_COLLECTION,
+)
 
 # Hugging Face model id (matches cached folder models--deepseek-ai--deepseek-coder-6.7b-instruct)
 MODEL_ID = os.getenv("GEN_MODEL", "deepseek-ai/deepseek-coder-6.7b-instruct")
@@ -194,11 +198,35 @@ def sanitize_answer(text: str) -> str:
     return text
 
 
-def rag_answer(prompt: LensPrompt) -> str:
-    use_rag = prompt.mode not in {"describe_my_query", "explain_my_query"}
+# Lens modes that never use retrieval, even when RAG is switched on.
+NO_RAG_MODES = {"describe_my_query", "explain_my_query"}
 
-    docs = retrieve_for_generation(prompt.retrieval_query) if use_rag else []
-    context = build_context(docs) if use_rag else ""
+
+def retrieve_docs(prompt: LensPrompt, use_rag: bool = True) -> List[Document]:
+    """Retrieve context documents for a prompt, or [] when RAG is off."""
+    if not use_rag or prompt.mode in NO_RAG_MODES:
+        return []
+    if prompt.mode == "generate_exercise":
+        return retrieve_for_generation(
+            prompt.retrieval_query,
+            collection=EX_COLLECTION,
+            construct_tags=getattr(prompt, "construct_tags", None),
+            forbidden_construct_tags=getattr(prompt, "forbidden_construct_tags", None),
+        )
+    # Lens modes are grounded on the taxonomy + textbook KB (same as phi3).
+    return retrieve_for_generation(prompt.retrieval_query, collection=KB_COLLECTION)
+
+
+def rag_answer(prompt: LensPrompt, use_rag: bool = True) -> str:
+    """Backwards-compatible entry point: returns only the answer text."""
+    answer, _docs = rag_answer_with_docs(prompt, use_rag=use_rag)
+    return answer
+
+
+def rag_answer_with_docs(prompt: LensPrompt, use_rag: bool = True):
+    """Same contract as generator_phi3_server_v2.rag_answer_with_docs."""
+    docs = retrieve_docs(prompt, use_rag=use_rag)
+    context = build_context(docs) if docs else ""
 
     debug_print_context(prompt, docs, context)
 
@@ -219,8 +247,8 @@ def rag_answer(prompt: LensPrompt) -> str:
     )
     # answer = sanitize_answer(answer)
 
-    if not use_rag or not docs:
-        return answer
+    if not docs:
+        return answer, docs
 
     # # compact sources list
     # lines = ["", "Sources:"]
@@ -237,7 +265,7 @@ def rag_answer(prompt: LensPrompt) -> str:
     # if shown == 0:
     #     return answer
 
-    return answer
+    return answer, docs
 
 
 # + "\n" + "\n".join(lines)

@@ -217,9 +217,17 @@ def doc_sources(docs: List[Document]) -> List[dict]:
     out = []
     for d in docs:
         md = d.metadata or {}
+        if md.get("doc_type") == "exercise":
+            # Exercise corpus (ingest_exercise_corpus.py): no resource_id,
+            # so identify the example by dataset + exercise title.
+            dataset = md.get("dataset_name", "")
+            title = md.get("title", "")
+            resource_id = " / ".join(x for x in (dataset, title) if x)
+        else:
+            resource_id = md.get("resource_id") or md.get("name") or ""
         out.append(
             {
-                "resource_id": md.get("resource_id") or md.get("name") or "",
+                "resource_id": resource_id or md.get("source", ""),
                 "section": md.get("section", ""),
                 "locator": md.get("section_locator", ""),
                 "doc_type": md.get("doc_type", ""),

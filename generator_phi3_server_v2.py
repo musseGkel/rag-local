@@ -67,7 +67,9 @@ def debug_print_context(prompt: LensPrompt, docs: List[Document], context: str) 
     if not DEBUG_CONTEXT:
         return
     print("\n" + "=" * 80)
-    print(f"[CONTEXT DEBUG] generator=phi3 | mode={prompt.mode} | lang={prompt.language}")
+    print(
+        f"[CONTEXT DEBUG] generator=phi3 | mode={prompt.mode} | lang={prompt.language} | rag={'on' if docs else 'off'}"
+    )
     print(f"[CONTEXT DEBUG] retrieval_query: {prompt.retrieval_query}")
     print(f"[CONTEXT DEBUG] retrieved docs: {len(docs)}")
     for i, d in enumerate(docs, 1):
@@ -189,21 +191,61 @@ def sanitize_answer(text: str) -> str:
     return text
 
 
-def rag_answer(prompt: LensPrompt) -> str:
+# Lens modes that never use retrieval, even when RAG is switched on.
+NO_RAG_MODES = {"describe_my_query", "explain_my_query"}
+
+
+def retrieve_docs(prompt: LensPrompt, use_rag: bool = True) -> List[Document]:
+    """Retrieve context documents for a prompt, or [] when RAG is off."""
+    if not use_rag or prompt.mode in NO_RAG_MODES:
+        return []
     if prompt.mode == "generate_exercise":
-        docs = retrieve_for_generation(
+        return retrieve_for_generation(
             prompt.retrieval_query,
             collection=EX_COLLECTION,
             construct_tags=getattr(prompt, "construct_tags", None),
             forbidden_construct_tags=getattr(prompt, "forbidden_construct_tags", None),
         )
-    elif prompt.mode in {"describe_my_query", "explain_my_query"}:
-        docs = []  # no RAG, as today
-    else:
-        docs = retrieve_for_generation(
-            prompt.retrieval_query,
-            collection=KB_COLLECTION,
+    return retrieve_for_generation(
+        prompt.retrieval_query,
+        collection=KB_COLLECTION,
+    )
+
+
+def doc_sources(docs: List[Document]) -> List[dict]:
+    """Compact, JSON-serialisable description of the retrieved documents."""
+    out = []
+    for d in docs:
+        md = d.metadata or {}
+        out.append(
+            {
+                "resource_id": md.get("resource_id") or md.get("name") or "",
+                "section": md.get("section", ""),
+                "locator": md.get("section_locator", ""),
+                "doc_type": md.get("doc_type", ""),
+            }
         )
+    return out
+
+
+def rag_answer(prompt: LensPrompt, use_rag: bool = True) -> str:
+    """Backwards-compatible entry point: returns only the answer text."""
+    answer, _docs = rag_answer_with_docs(prompt, use_rag=use_rag)
+    return answer
+
+
+def rag_answer_with_docs(prompt: LensPrompt, use_rag: bool = True):
+    """
+    Generate an answer for `prompt`.
+
+    use_rag=True  -> retrieve context and inject it (default pipeline).
+    use_rag=False -> skip retrieval; the model sees only the system prompt
+                     and the task prompt (baseline for the RAG vs no-RAG study).
+
+    Returns (answer, docs) where docs is the list of retrieved documents
+    (empty when RAG is off or the mode never uses retrieval).
+    """
+    docs = retrieve_docs(prompt, use_rag=use_rag)
 
     context = build_context(docs) if docs else ""
 
@@ -227,7 +269,7 @@ def rag_answer(prompt: LensPrompt) -> str:
     # answer = sanitize_answer(answer)
 
     if not docs:
-        return answer
+        return answer, docs
 
     # # compact sources list
     # lines = ["", "Sources:"]
@@ -244,7 +286,7 @@ def rag_answer(prompt: LensPrompt) -> str:
     # if shown == 0:
     #     return answer
 
-    return answer
+    return answer, docs
 
 
 # + "\n" + "\n".join(lines)

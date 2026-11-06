@@ -28,6 +28,8 @@ class ExerciseRequest(BaseModel):
     language: str = "en"
     dataset_name: str = "unicorsi"
     max_retries: int = 5
+    # RAG switch: True = retrieve similar exercises as examples, False = model only.
+    use_rag: bool = True
 
 
 # =========================
@@ -79,6 +81,7 @@ def generate_exercise_endpoint(req: ExerciseRequest, x_api_key: str = Header(Non
         language=req.language,
         dataset_name=req.dataset_name,
         max_retries=req.max_retries,
+        use_rag=req.use_rag,
     )
 
     return {
@@ -89,6 +92,8 @@ def generate_exercise_endpoint(req: ExerciseRequest, x_api_key: str = Header(Non
         "attempts": result["attempts"],
         "violations": result["violations"],
         "valid": len(result["violations"]) == 0,
+        "use_rag": req.use_rag,
+        "sources": result.get("sources", []),
     }
 
 

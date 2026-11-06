@@ -6,3 +6,4 @@ __pycache__/
 evaluation/
 sanity_check.py
 db/chroma.sqlite3
+rag_project

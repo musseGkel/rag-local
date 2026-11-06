@@ -16,8 +16,8 @@ print(
 )
 
 # import your generators
-from generator_phi3_server_v2 import rag_answer as phi3_answer
-from generator_deepseek_v2 import rag_answer as deepseek_answer
+from generator_phi3_server_v2 import rag_answer_with_docs as phi3_answer, doc_sources
+from generator_deepseek_v2 import rag_answer_with_docs as deepseek_answer
 from fastapi import Header
 from auth import verify_key
 from exercise_router import router as exercise_router
@@ -49,6 +49,8 @@ class QueryRequest(BaseModel):
     error_code: str = ""
     errors: list[str] = []
     language: str = "en"
+    # RAG switch: True = retrieve context from the KB, False = model only.
+    use_rag: bool = True
 
 
 # =========================
@@ -97,12 +99,21 @@ def generate(req: QueryRequest, x_api_key: str = Header(None)):
     prompt = build_prompt(req)
 
     if req.model == "phi3":
-        answer = phi3_answer(prompt)
+        answer, docs = phi3_answer(prompt, use_rag=req.use_rag)
 
     elif req.model == "deepseek":
-        answer = deepseek_answer(prompt)
+        answer, docs = deepseek_answer(prompt, use_rag=req.use_rag)
 
     else:
         return {"error": "Invalid model"}
 
-    return {"mode": req.mode, "model": req.model, "response": answer}
+    return {
+        "mode": req.mode,
+        "model": req.model,
+        "use_rag": req.use_rag,
+        # False when RAG was requested but the mode never retrieves
+        # (describe/explain query) or retrieval returned nothing.
+        "rag_applied": bool(docs),
+        "sources": doc_sources(docs),
+        "response": answer,
+    }
